@@ -1,0 +1,115 @@
+body, button, input, select, textarea {
+  font-family: 'Noto Sans Thai', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+/* Sidebar scrollbar */
+#sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Active nav link */
+.nav-link.active {
+  border-left-color: #2563eb;
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 500;
+}
+.dark .nav-link.active {
+  border-left-color: #38bdf8;
+  background-color: #1e293b;
+  color: #38bdf8;
+}
+
+/* Nav group arrow rotation */
+.nav-group-toggle .nav-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Smooth transitions */
+.nav-link {
+  transition: all 0.15s ease;
+}
+
+/* Code block hover effect */
+.code-block {
+  transition: box-shadow 0.2s ease;
+}
+.code-block:hover {
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+/* Copy button states */
+.copy-btn {
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.copy-btn.copied {
+  color: #34d399 !important;
+}
+
+/* Endpoint section target offset for sticky header */
+.endpoint-section {
+  scroll-margin-top: 5rem;
+}
+section[id] {
+  scroll-margin-top: 5rem;
+}
+
+/* Table styles */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+thead th:first-child {
+  border-top-left-radius: 0.5rem;
+}
+thead th:last-child {
+  border-top-right-radius: 0.5rem;
+}
+
+/* Mobile sidebar transition */
+#sidebar {
+  will-change: transform;
+}
+
+/* Print styles */
+@media print {
+  #sidebar, #sidebar-overlay, #sidebar-toggle, #theme-toggle, .copy-btn {
+    display: none !important;
+  }
+  main {
+    margin-left: 0 !important;
+  }
+  .code-block {
+    break-inside: avoid;
+  }
+}
+
+/* Selection color */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+}
+.dark ::selection {
+  background: rgba(56, 189, 248, 0.3);
+}

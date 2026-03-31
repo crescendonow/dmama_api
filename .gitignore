@@ -1,0 +1,18 @@
+note/ 
+.claude/ 
+.env 
+nginx.conf 
+# Binaries และ Executables
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+__debug_bin
+# Go test coverage files
+*.out
+*.test
+prof/
+.vscode/
+.idea/
