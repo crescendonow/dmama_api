@@ -36,6 +36,9 @@ func (r *OfficeRepo) GetAll(ctx context.Context, format model.GeomFormat) ([]mod
 		if err := rows.Scan(&o.PwaCode, &o.Region, &o.Zone, &o.Name, &o.Geometry); err != nil {
 			return nil, err
 		}
+		o.Region = decodeDBText(o.Region)
+		o.Zone = decodeDBTextPtr(o.Zone)
+		o.Name = decodeDBText(o.Name)
 		offices = append(offices, o)
 	}
 	return offices, nil

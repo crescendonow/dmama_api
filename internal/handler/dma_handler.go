@@ -56,6 +56,29 @@ func resolveRegion(c *fiber.Ctx) (int, string, error) {
 	return 0, "", fiber.NewError(400, "region or pwa_code is required")
 }
 
+// AtLeakpoint finds the DMA boundary containing a leakpoint coordinate.
+// GET /api/dma/at-leakpoint?lng=101.6893&lat=13.9849&pwa_code=5531011
+func (h *DMAHandler) AtLeakpoint(c *fiber.Ctx) error {
+	lng, err := strconv.ParseFloat(c.Query("lng"), 64)
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse("lng is required"))
+	}
+
+	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse("lat is required"))
+	}
+
+	result, err := h.dmaRepo.GetAtLeakpoint(c.Context(), lng, lat, c.Query("pwa_code"))
+	if err != nil {
+		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+	if result == nil {
+		return c.JSON(model.SuccessResponse(nil))
+	}
+	return c.JSON(model.SuccessResponse(result))
+}
+
 // GetBoundary fetches a DMA boundary. (Endpoint 3)
 // GET /api/dma/boundary?pwa_code=5531011&dma_id=1&format=geojson
 func (h *DMAHandler) GetBoundary(c *fiber.Ctx) error {

@@ -34,6 +34,7 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, cfg *config.Config) {
 
 	// DMA endpoints (3, 4, 5, 6, 7, 14, 15, 16)
 	dmaH := handler.NewDMAHandler(pool)
+	api.Get("/dma/at-leakpoint", dmaH.AtLeakpoint)
 	api.Get("/dma/boundary", dmaH.GetBoundary)
 	api.Get("/dma/usage", dmaH.GetUsage)
 	api.Get("/dma/population", dmaH.GetPopulation)

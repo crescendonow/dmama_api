@@ -34,7 +34,7 @@ func (r *LeakpointRepo) GetLeakpointsBySizeInDMA(ctx context.Context, region int
 			AND ST_Within(lk.wkb_geometry, dma.wkb_geometry)
 			AND dma.pwa_code = $1
 			AND dma.dma_id = $2
-			AND (%d - 2500 - year_from_leakdate) <= 5`, tbl, yearBE)
+			AND (%d - 2500 - leakdate::INTEGER) <= 5`, tbl, yearBE)
 
 	var result model.DMALeakpointsBySize
 	err := r.pool.QueryRow(ctx, query, pwaCode, dmaID).Scan(

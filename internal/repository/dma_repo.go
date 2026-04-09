@@ -18,6 +18,37 @@ func NewDMARepo(pool *pgxpool.Pool) *DMARepo {
 	return &DMARepo{pool: pool}
 }
 
+// GetAtLeakpoint finds the DMA boundary intersecting a leakpoint coordinate.
+func (r *DMARepo) GetAtLeakpoint(ctx context.Context, lng, lat float64, pwaCode string) (*model.DMABoundary, error) {
+	query := `
+		SELECT pwa_code, dma_id, dma_no
+		FROM pwa_dma.dma_boundary
+		WHERE ST_Intersects(
+			wkb_geometry,
+			ST_SetSRID(ST_MakePoint($1, $2), 4326)
+		)`
+
+	args := []interface{}{lng, lat}
+	if pwaCode != "" {
+		query += " AND pwa_code = $3"
+		args = append(args, pwaCode)
+	}
+
+	query += " LIMIT 1"
+
+	var result model.DMABoundary
+	err := r.pool.QueryRow(ctx, query, args...).Scan(
+		&result.PwaCode, &result.DmaID, &result.DmaNo,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &result, nil
+}
+
 // GetBoundary fetches a DMA boundary by pwa_code and dma_id. (Endpoint 3)
 func (r *DMARepo) GetBoundary(ctx context.Context, pwaCode, dmaID string, format model.GeomFormat) (*model.DMABoundary, error) {
 	geomExpr := model.SQLGeomExpr("wkb_geometry", format)
@@ -42,7 +73,7 @@ func (r *DMARepo) GetBoundary(ctx context.Context, pwaCode, dmaID string, format
 // GetBoundaryRaw fetches DMA boundary raw geometry for spatial queries (internal use).
 func (r *DMARepo) GetBoundaryRaw(ctx context.Context, pwaCode, dmaID string) (string, error) {
 	query := `
-		SELECT ST_AsText(wkb_geometry)
+		SELECT ST_AsEWKT(wkb_geometry)
 		FROM pwa_dma.dma_boundary
 		WHERE pwa_code = $1 AND dma_id = $2`
 

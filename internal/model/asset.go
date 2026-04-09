@@ -61,7 +61,8 @@ type AssetCount struct {
 
 // PipeInfo holds pipe detail from leakpoint intersection.
 type PipeInfo struct {
-	PipeSize    *int    `json:"pipe_size,omitempty"`
-	PipeType    *string `json:"pipe_type,omitempty"`
-	YearInstall *int    `json:"yearinstall,omitempty"`
+	PipeSize    *int     `json:"pipe_size,omitempty"`
+	PipeType    *string  `json:"pipe_type,omitempty"`
+	YearInstall *int     `json:"yearinstall,omitempty"`
+	Distance    *float64 `json:"distance,omitempty"`
 }

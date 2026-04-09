@@ -92,16 +92,26 @@ func (r *PipeRepo) GetGeometry(ctx context.Context, region int, pipeIDs []string
 }
 
 // GetPipeAtLeakpoint finds the pipe at a leakpoint's geometry. (Endpoint 11)
-func (r *PipeRepo) GetPipeAtLeakpoint(ctx context.Context, region int, leakpointGeoJSON string) (*model.PipeInfo, error) {
+func (r *PipeRepo) GetPipeAtLeakpoint(ctx context.Context, region int, lng, lat float64) (*model.PipeInfo, error) {
 	tbl := TableName("oracle", region, "pipe")
 	query := fmt.Sprintf(`
-		SELECT pipe_size, pipe_type, yearinstall
+		SELECT pipe_size, pipe_type, yearinstall,
+			ST_DistanceSphere(
+				ST_ClosestPoint(wkb_geometry, ST_SetSRID(ST_MakePoint($1,$2),4326)),
+				ST_SetSRID(ST_MakePoint($1,$2),4326)
+			) AS distance
 		FROM %s AS pipe
-		WHERE ST_Intersects(ST_GeomFromGeoJSON($1)::geography, wkb_geometry)
+		WHERE ST_Intersects(
+			ST_Buffer(ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, 10)::geometry,
+			wkb_geometry
+		)
+		ORDER BY distance ASC
 		LIMIT 1`, tbl)
 
 	var result model.PipeInfo
-	err := r.pool.QueryRow(ctx, query, leakpointGeoJSON).Scan(&result.PipeSize, &result.PipeType, &result.YearInstall)
+	err := r.pool.QueryRow(ctx, query, lng, lat).Scan(
+		&result.PipeSize, &result.PipeType, &result.YearInstall, &result.Distance,
+	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -163,7 +173,7 @@ func (r *PipeRepo) GetAssetsOnPipe(ctx context.Context, region int, pipeWkbGeome
 func (r *PipeRepo) SumPipeLengthInDMA(ctx context.Context, region int, dmaWkbGeometry string) (*model.DMAPipeLength, error) {
 	tbl := TableName("oracle", region, "pipe")
 	query := fmt.Sprintf(`
-		SELECT COALESCE(SUM(long), 0) AS c
+		SELECT COALESCE(SUM(pipe_long), 0) AS c
 		FROM %s AS mt
 		WHERE ST_Contains($1::geometry, mt.wkb_geometry)`, tbl)
 

@@ -3,7 +3,7 @@ package model
 // PWAOffice represents a PWA office location.
 type PWAOffice struct {
 	PwaCode  string  `json:"pwa_code"`
-	Region   int     `json:"region"`
+	Region   string  `json:"region"`
 	Zone     *string `json:"zone,omitempty"`
 	Name     string  `json:"name"`
 	Geometry *string `json:"geometry,omitempty"`

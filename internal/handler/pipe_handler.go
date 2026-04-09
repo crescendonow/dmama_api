@@ -80,19 +80,23 @@ func (h *PipeHandler) GetGeometry(c *fiber.Ctx) error {
 }
 
 // AtLeakpoint finds pipe at a leakpoint's geometry. (Endpoint 11)
-// GET /api/pipe/at-leakpoint?region=1&geojson=...
+// GET /api/pipe/at-leakpoint?region=1&lng=101.6893&lat=13.9849
 func (h *PipeHandler) AtLeakpoint(c *fiber.Ctx) error {
 	region, err := strconv.Atoi(c.Query("region"))
 	if err != nil || !repository.ValidRegion(region) {
 		return c.Status(400).JSON(model.ErrorResponse("region must be 1-10"))
 	}
 
-	geojson := c.Query("geojson")
-	if geojson == "" {
-		return c.Status(400).JSON(model.ErrorResponse("geojson is required"))
+	lng, err := strconv.ParseFloat(c.Query("lng"), 64)
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse("lng is required"))
+	}
+	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse("lat is required"))
 	}
 
-	result, err := h.pipeRepo.GetPipeAtLeakpoint(c.Context(), region, geojson)
+	result, err := h.pipeRepo.GetPipeAtLeakpoint(c.Context(), region, lng, lat)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}

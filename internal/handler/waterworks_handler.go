@@ -23,9 +23,13 @@ func NewWaterworksHandler(pool *pgxpool.Pool) *WaterworksHandler {
 // GetMarkers fetches waterworks markers by type. (Endpoint 9)
 // GET /api/waterworks?type=3&format=geojson
 func (h *WaterworksHandler) GetMarkers(c *fiber.Ctx) error {
-	stationType, err := strconv.Atoi(c.Query("type"))
-	if err != nil {
-		return c.Status(400).JSON(model.ErrorResponse("type is required (e.g., 3=production, 7=pump)"))
+	var stationType *int
+	if typeStr := c.Query("type"); typeStr != "" {
+		parsed, err := strconv.Atoi(typeStr)
+		if err != nil {
+			return c.Status(400).JSON(model.ErrorResponse("type must be an integer"))
+		}
+		stationType = &parsed
 	}
 
 	format := model.ParseGeomFormat(c.Query("format"))
