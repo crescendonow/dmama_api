@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./static/css/docs.css?v=20240401">
+  <link rel="stylesheet" href="./static/css/docs.css?v=20260410">
 </head>
 <body class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-200">
 
@@ -38,7 +38,7 @@
         <div class="flex items-center gap-2">
           <svg class="w-7 h-7 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
           <h1 class="text-lg font-bold text-white">DMAMA API</h1>
-          <span class="text-xs bg-sky-500/30 text-sky-200 px-2 py-0.5 rounded-full font-medium">v2026.01</span>
+          <span class="text-xs bg-sky-500/30 text-sky-200 px-2 py-0.5 rounded-full font-medium">v2026.04</span>
         </div>
       </div>
       <button id="theme-toggle" class="p-2 text-white hover:bg-primary-600 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Toggle dark mode">
@@ -64,6 +64,7 @@
       <a href="#geometry-format" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">รูปแบบ Geometry</a>
       <a href="#zone-mapping" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">การแมป Zone/เขต</a>
 
+      <a href="#playground" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">Playground / Test Case</a>
       <div class="my-3 border-t border-slate-200 dark:border-slate-700"></div>
 
       <!-- Endpoints -->
@@ -105,6 +106,9 @@
           <svg class="nav-arrow w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
         <div class="nav-group-items hidden">
+          <a href="#ep-dma-leakpoint" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> DMA @ leakpoint
+          </a>
           <a href="#ep-dma-boundary" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ขอบเขต DMA
           </a>
@@ -180,7 +184,7 @@
         </div>
         <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center border border-slate-200 dark:border-slate-700">
-            <div class="text-2xl font-bold text-primary-600 dark:text-sky-400">16</div>
+            <div class="text-2xl font-bold text-primary-600 dark:text-sky-400">17</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">Endpoints</div>
           </div>
           <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center border border-slate-200 dark:border-slate-700">
@@ -333,6 +337,33 @@ res = requests.get(
         </table>
       </section>
 
+      <!-- Playground -->
+      <section id="playground" class="mb-16">
+        <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Playground / Test Case</h2>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">อ้างอิงจากไฟล์ <code class="text-sm bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">note/dmama_api.postman_collection.json</code> สำหรับ import เข้า Postman และทำ smoke test ให้ตรงกับ endpoint ปัจจุบัน</p>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">Suggested test flow</h3>
+            <ol class="list-decimal list-inside space-y-2 text-sm text-slate-600 dark:text-slate-300">
+              <li>Import Postman collection and set <code class="text-xs">X-API-Key</code></li>
+              <li>Verify <code class="text-xs">/api/health</code> before testing protected routes</li>
+              <li>Test one endpoint from each group: Pipe, DMA, Office/Waterworks, Asset</li>
+              <li>Compare <code class="text-xs">format=geojson</code> and <code class="text-xs">format=wkt</code> on geometry endpoints</li>
+              <li>For <code class="text-xs">/api/asset/in-area</code>, test both Polygon and LineString + buffer</li>
+            </ol>
+          </div>
+          <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">Current collection highlights</h3>
+            <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+              <li>Pipe: <code class="text-xs">assign-logger</code>, <code class="text-xs">geometry</code>, <code class="text-xs">at-leakpoint</code>, <code class="text-xs">assets</code></li>
+              <li>DMA: <code class="text-xs">boundary</code>, <code class="text-xs">usage</code>, <code class="text-xs">usage-v2</code>, <code class="text-xs">pipe-length-clipped</code></li>
+              <li>Shared data: <code class="text-xs">office</code>, <code class="text-xs">waterworks</code></li>
+              <li>Spatial tools: <code class="text-xs">asset/nearest</code>, <code class="text-xs">asset/in-area</code></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <!-- ==================== ENDPOINTS ==================== -->
 
       <div class="mb-8 border-t-2 border-primary-200 dark:border-slate-700 pt-8">
@@ -395,18 +426,18 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/pipe/geometry</code>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">ดึง geometry ของท่อโดยระบุ pipe_id หรือ pwa_code เพื่อใช้แสดงผลบนแผนที่</p>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ดึง geometry ของท่อโดยต้องระบุ <code class="text-xs">pwa_code</code> และเลือกส่ง <code class="text-xs">pipe_id</code> เพิ่มได้หากต้องการกรองเฉพาะบางท่อ</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
         <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
           <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
           <tbody>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">เขต 1-10</td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">pipe_id</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional*</span></td><td class="px-4 py-2">รหัสท่อ คั่นด้วยจุลภาค เช่น <code class="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">22239,22240</code></td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional*</span></td><td class="px-4 py-2">รหัสสาขา pwa_code เช่น <code class="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">5531011</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">pipe_id</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">รหัสท่อ คั่นด้วยจุลภาค เช่น <code class="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">22239,22240</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัสสาขา pwa_code เช่น <code class="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">5531011</code></td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">format</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">geojson</code> (default) หรือ <code class="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">wkt</code></td></tr>
           </tbody>
         </table>
-        <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">* ต้องระบุอย่างน้อยหนึ่งค่า (pipe_id หรือ pwa_code) ถ้าระบุทั้งคู่จะใช้เงื่อนไข AND</p>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">ถ้าส่ง <code class="text-xs">pipe_id</code> ต้องส่ง <code class="text-xs">pwa_code</code> มาด้วยเสมอ</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
@@ -432,7 +463,8 @@ res = requests.get(
           <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
           <tbody>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">เขต 1-10</td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">geojson</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">GeoJSON geometry ของจุดซ่อมท่อ</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">lng</td><td class="px-4 py-2">float</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">Longitude ของจุด leakpoint</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">lat</td><td class="px-4 py-2">float</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">Latitude ของจุด leakpoint</td></tr>
           </tbody>
         </table>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
@@ -462,6 +494,9 @@ res = requests.get(
             <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">format</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs">geojson</code> (default) หรือ <code class="text-xs">wkt</code></td></tr>
           </tbody>
         </table>
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
+          Current behavior: ส่ง <code class="text-xs">wkb_geometry</code> หรือส่ง <code class="text-xs">lng</code> และ <code class="text-xs">lat</code> ก็ได้. รองรับ <code class="text-xs">meter</code>, <code class="text-xs">bl_customer</code>, <code class="text-xs">valve</code>, <code class="text-xs">leakpoint</code>, และ <code class="text-xs">firehydrant</code>. หากใช้ <code class="text-xs">format=geojson</code> จะได้ผลลัพธ์แบบ GeoJSON FeatureCollection.
+        </div>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
@@ -478,6 +513,24 @@ res = requests.get(
       <div class="mb-6 mt-12">
         <h3 class="text-lg font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DMA Endpoints — ขอบเขต DMA</h3>
       </div>
+
+      <!-- EP17: DMA At Leakpoint -->
+      <section id="ep-dma-leakpoint" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/at-leakpoint</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ค้นหา DMA ที่ครอบพิกัด leakpoint จาก <code class="text-xs">lng</code> และ <code class="text-xs">lat</code> โดยระบุ <code class="text-xs">pwa_code</code> เพิ่มได้ถ้าต้องการ filter รายสาขา</p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">lng</td><td class="px-4 py-2">float</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">Longitude</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">lat</td><td class="px-4 py-2">float</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">Latitude</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">Filter by office code</td></tr>
+          </tbody>
+        </table>
+      </section>
 
       <!-- EP3: DMA Boundary -->
       <section id="ep-dma-boundary" class="endpoint-section mb-12">
@@ -747,7 +800,7 @@ res = requests.get(
         <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
           <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
           <tbody>
-            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">type</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2"><code class="text-xs">3</code> = โรงผลิต, <code class="text-xs">7</code> = สถานีสูบน้ำ</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">type</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs">3</code> = โรงผลิต, <code class="text-xs">7</code> = สถานีสูบน้ำ, ไม่ส่งค่า = ดึงทั้งหมด</td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">format</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs">geojson</code> (default) หรือ <code class="text-xs">wkt</code></td></tr>
           </tbody>
         </table>
@@ -783,17 +836,20 @@ res = requests.get(
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">เขต 1-10</td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">lng</td><td class="px-4 py-2">float</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">ลองจิจูด</td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">lat</td><td class="px-4 py-2">float</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">ละติจูด</td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">type</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs">pipe</code> (default), <code class="text-xs">meter</code>, <code class="text-xs">valve</code>, <code class="text-xs">leakpoint</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">type</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs">pipe</code> (default), <code class="text-xs">meter</code>, <code class="text-xs">valve</code>, <code class="text-xs">firehydrant</code>, <code class="text-xs">leakpoint</code></td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">format</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs">geojson</code> (default) หรือ <code class="text-xs">wkt</code></td></tr>
           </tbody>
         </table>
+        <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
+          The identifier field in the response changes by type: <code class="text-xs">pipe_id</code>, <code class="text-xs">ogc_fid</code>, <code class="text-xs">valve_id</code>, <code class="text-xs">fire_id</code>, or <code class="text-xs">leak_no</code>.
+        </div>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
   <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
   <span class="text-sky-400">"data"</span>: {
-    <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"pipe"</span>, <span class="text-sky-400">"ogc_fid"</span>: <span class="text-amber-300">5000</span>,
+    <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"firehydrant"</span>, <span class="text-sky-400">"fire_id"</span>: <span class="text-amber-300">5000</span>,
     <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5531011"</span>, <span class="text-sky-400">"distance"</span>: <span class="text-amber-300">12.5</span>,
     <span class="text-sky-400">"geometry"</span>: <span class="text-emerald-400">"{...}"</span>
   }
@@ -864,13 +920,13 @@ res = requests.get(
 
       <!-- Footer -->
       <footer class="border-t border-slate-200 dark:border-slate-700 pt-8 pb-12 text-center text-sm text-slate-400 dark:text-slate-500">
-        <p>DMAMA API v2026.01 &mdash; REST API สำหรับระบบ DMAMA (พัฒนาโดย กองเทคโนโลยีสารสนเทศระบบประปา)</p>
+        <p>DMAMA API v2026.04 &mdash; REST API สำหรับระบบ DMAMA (พัฒนาโดย กองเทคโนโลยีสารสนเทศระบบประปา)</p>
         <p class="mt-1">Go + Fiber v2 + pgx v5 + PostgreSQL 9.4 + PostGIS</p>
       </footer>
 
     </div>
   </main>
 
-  <script src="./static/js/docs.js?v=20240401"></script>
+  <script src="./static/js/docs.js?v=20260410"></script>
 </body>
 </html>
