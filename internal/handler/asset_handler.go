@@ -40,8 +40,8 @@ func (h *AssetHandler) FindNearest(c *fiber.Ctx) error {
 	}
 
 	assetType := c.Query("type", "pipe")
-	if assetType != "pipe" && assetType != "meter" && assetType != "valve" && assetType != "leakpoint" {
-		return c.Status(400).JSON(model.ErrorResponse("type must be pipe, meter, valve, or leakpoint"))
+	if assetType != "pipe" && assetType != "meter" && assetType != "valve" && assetType != "firehydrant" && assetType != "leakpoint" {
+		return c.Status(400).JSON(model.ErrorResponse("type must be pipe, meter, valve, firehydrant, or leakpoint"))
 	}
 
 	format := model.ParseGeomFormat(c.Query("format"))

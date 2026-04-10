@@ -44,11 +44,11 @@ type Leakpoint struct {
 
 // NearestAsset is the result of finding the nearest asset to a point.
 type NearestAsset struct {
-	Type     string  `json:"type"`
-	OgcFid   int     `json:"ogc_fid"`
-	PwaCode  *string `json:"pwa_code,omitempty"`
-	Distance float64 `json:"distance"`
-	Geometry *string `json:"geometry,omitempty"`
+	Type     string      `json:"type"`
+	AssetID  interface{} `json:"-"`
+	PwaCode  interface{} `json:"pwa_code,omitempty"`
+	Distance interface{} `json:"distance"`
+	Geometry interface{} `json:"geometry,omitempty"`
 }
 
 // AssetCount holds counts for assets in area queries.

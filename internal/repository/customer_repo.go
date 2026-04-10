@@ -109,3 +109,42 @@ func (r *CustomerRepo) CountPopulationInDMA(ctx context.Context, region int, pwa
 	}
 	return &result, nil
 }
+
+// CountPopulationByDMA counts customers by type within a DMA via direct DB-side join.
+// This avoids round-tripping the DMA geometry through the application layer.
+func (r *CustomerRepo) CountPopulationByDMA(ctx context.Context, region int, pwaCode, dmaID, column string) (*model.DMAPopulation, error) {
+	if err := ValidateColumn(column); err != nil {
+		return nil, err
+	}
+
+	tbl := TableName("giswebm_stamp", region, "bl_customer")
+	query := fmt.Sprintf(`
+		SELECT
+			COALESCE(COUNT(*) FILTER (WHERE %s > -1), 0) AS c,
+			COALESCE(COUNT(*) FILTER (WHERE usetype LIKE '1%%'), 0) AS c_house,
+			COALESCE(COUNT(*) FILTER (WHERE usetype LIKE '2%%'), 0) AS c_government,
+			COALESCE(COUNT(*) FILTER (WHERE usetype LIKE '3%%'), 0) AS c_business
+		FROM pwa_dma.dma_boundary AS dma
+		JOIN %s AS bl
+			ON bl.pwa_code = dma.pwa_code
+		WHERE dma.pwa_code = $1
+			AND dma.dma_id = $2
+			AND ST_Intersects(
+				dma.wkb_geometry,
+				CASE
+					WHEN ST_SRID(bl.wkb_geometry) = ST_SRID(dma.wkb_geometry) THEN bl.wkb_geometry
+					WHEN ST_SRID(bl.wkb_geometry) = 0 THEN ST_SetSRID(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
+					ELSE ST_Transform(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
+				END
+			)`,
+		column, tbl)
+
+	var result model.DMAPopulation
+	err := r.pool.QueryRow(ctx, query, pwaCode, dmaID).Scan(
+		&result.Total, &result.House, &result.Government, &result.Business,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

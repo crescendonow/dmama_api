@@ -7,7 +7,6 @@ import (
 	"dmama_api/internal/model"
 	"dmama_api/internal/repository"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -19,34 +18,66 @@ func NewAssetService(pool *pgxpool.Pool) *AssetService {
 	return &AssetService{pool: pool}
 }
 
-// FindNearest finds the nearest asset (pipe/meter/valve/leakpoint) within radius. (Endpoint 10)
-func (s *AssetService) FindNearest(ctx context.Context, region int, lng, lat, radius float64, assetType string, format model.GeomFormat) (*model.NearestAsset, error) {
+// FindNearest finds the nearest asset (pipe/meter/valve/firehydrant/leakpoint) within radius. (Endpoint 10)
+func (s *AssetService) FindNearest(ctx context.Context, region int, lng, lat, radius float64, assetType string, format model.GeomFormat) (map[string]interface{}, error) {
 	tbl := repository.TableName("oracle", region, assetType)
 	geomExpr := model.SQLGeomExpr(fmt.Sprintf("%s.wkb_geometry", assetType), format)
+	idColumn, idKey, err := nearestAssetIdentifier(assetType)
+	if err != nil {
+		return nil, err
+	}
 
 	query := fmt.Sprintf(`
-		SELECT %s.ogc_fid, %s.pwa_code, %s,
+		SELECT %s.%s, %s.pwa_code, %s,
 			ST_Distance(ST_Point($1, $2)::geography, %s.wkb_geometry::geography) AS distance
 		FROM %s AS %s
 		JOIN pwa_office.pwa_office234 AS office ON office.pwa_code = %s.pwa_code
 		WHERE ST_DWithin(ST_Point($1, $2)::geography, %s.wkb_geometry::geography, $3)
 		ORDER BY distance ASC
 		LIMIT 1`,
-		assetType, assetType, geomExpr,
+		assetType, idColumn, assetType, geomExpr,
 		assetType, tbl, assetType, assetType, assetType)
 
-	var result model.NearestAsset
-	result.Type = assetType
-	err := s.pool.QueryRow(ctx, query, lng, lat, radius).Scan(
-		&result.OgcFid, &result.PwaCode, &result.Geometry, &result.Distance,
-	)
+	rows, err := s.pool.Query(ctx, query, lng, lat, radius)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
 		return nil, err
 	}
-	return &result, nil
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, nil
+	}
+
+	values, err := rows.Values()
+	if err != nil {
+		return nil, err
+	}
+
+	result := map[string]interface{}{
+		"type":     assetType,
+		idKey:      values[0],
+		"pwa_code": values[1],
+		"geometry": values[2],
+		"distance": values[3],
+	}
+	return result, rows.Err()
+}
+
+func nearestAssetIdentifier(assetType string) (column string, jsonKey string, err error) {
+	switch assetType {
+	case "pipe":
+		return "pipe_id", "pipe_id", nil
+	case "meter":
+		return "ogc_fid", "ogc_fid", nil
+	case "valve":
+		return "valve_id", "valve_id", nil
+	case "firehydrant":
+		return "fire_id", "fire_id", nil
+	case "leakpoint":
+		return "leak_no", "leak_no", nil
+	default:
+		return "", "", fmt.Errorf("invalid asset type: %s", assetType)
+	}
 }
 
 // CountAssetsInArea counts assets within a drawn polygon or buffered linestring. (Endpoint 13)
@@ -54,21 +85,62 @@ func (s *AssetService) CountAssetsInArea(ctx context.Context, regions []int, geo
 	var result model.AssetCount
 
 	for _, assetType := range []string{"meter", "valve", "leakpoint", "pipe"} {
-		var spatialClause string
-		if geomType == "LineString" {
-			spatialClause = fmt.Sprintf(
-				"ST_DWithin(ST_GeomFromGeoJSON($1)::geography, %s.wkb_geometry::geography, $2)",
-				assetType)
-		} else {
-			spatialClause = fmt.Sprintf(
-				"ST_Intersects(ST_GeomFromGeoJSON($1)::geometry, %s.wkb_geometry)",
-				assetType)
-		}
-
 		query := repository.UnionAll(regions, "oracle", assetType, func(tbl string, region int) string {
-			return fmt.Sprintf(
-				`SELECT COUNT(*) AS total FROM %s AS %s WHERE %s`,
-				tbl, assetType, spatialClause)
+			if geomType == "LineString" {
+				return fmt.Sprintf(`
+					WITH srid_info AS (
+						SELECT COALESCE(NULLIF(ST_SRID(wkb_geometry), 0), 4326) AS srid
+						FROM %s
+						WHERE wkb_geometry IS NOT NULL
+						LIMIT 1
+					),
+					search AS (
+						SELECT CASE
+							WHEN srid_info.srid = 4326 THEN ST_SetSRID(ST_GeomFromGeoJSON($1), 4326)
+							ELSE ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), srid_info.srid)
+						END AS geom
+						FROM srid_info
+					)
+					SELECT COUNT(*) AS total
+					FROM %s AS %s
+					CROSS JOIN search
+					WHERE ST_DWithin(
+						search.geom::geography,
+						CASE
+							WHEN ST_SRID(%s.wkb_geometry) = 0 THEN ST_SetSRID(%s.wkb_geometry, ST_SRID(search.geom))
+							ELSE %s.wkb_geometry
+						END::geography,
+						$2
+					)`,
+					tbl, tbl, assetType, assetType, assetType, assetType)
+			}
+
+			return fmt.Sprintf(`
+				WITH srid_info AS (
+					SELECT COALESCE(NULLIF(ST_SRID(wkb_geometry), 0), 4326) AS srid
+					FROM %s
+					WHERE wkb_geometry IS NOT NULL
+					LIMIT 1
+				),
+				search AS (
+					SELECT CASE
+						WHEN srid_info.srid = 4326 THEN ST_SetSRID(ST_GeomFromGeoJSON($1), 4326)
+						ELSE ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), srid_info.srid)
+					END AS geom
+					FROM srid_info
+				)
+				SELECT COUNT(*) AS total
+				FROM %s AS %s
+				CROSS JOIN search
+				WHERE %s.wkb_geometry && search.geom
+					AND ST_Intersects(
+						search.geom,
+						CASE
+							WHEN ST_SRID(%s.wkb_geometry) = 0 THEN ST_SetSRID(%s.wkb_geometry, ST_SRID(search.geom))
+							ELSE %s.wkb_geometry
+						END
+					)`,
+				tbl, tbl, assetType, assetType, assetType, assetType, assetType)
 		})
 		query = fmt.Sprintf("SELECT COALESCE(SUM(total), 0) FROM (%s) sub", query)
 

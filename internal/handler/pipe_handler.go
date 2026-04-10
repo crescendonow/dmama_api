@@ -47,8 +47,8 @@ func (h *PipeHandler) AssignLogger(c *fiber.Ctx) error {
 	return c.JSON(model.SuccessResponse(result))
 }
 
-// GetGeometry fetches pipe geometries by pipe_id and/or pwa_code. (Endpoint 2)
-// GET /api/pipe/geometry?region=1&pipe_id=PIPE001,PIPE002&pwa_code=5531&format=geojson
+// GetGeometry fetches pipe geometries by pwa_code and optional pipe_id. (Endpoint 2)
+// GET /api/pipe/geometry?region=1&pwa_code=5531011&pipe_id=PIPE001,PIPE002&format=geojson
 func (h *PipeHandler) GetGeometry(c *fiber.Ctx) error {
 	region, err := strconv.Atoi(c.Query("region"))
 	if err != nil || !repository.ValidRegion(region) {
@@ -57,10 +57,6 @@ func (h *PipeHandler) GetGeometry(c *fiber.Ctx) error {
 
 	pipeIDStr := c.Query("pipe_id")
 	pwaCode := c.Query("pwa_code")
-	if pipeIDStr == "" && pwaCode == "" {
-		return c.Status(400).JSON(model.ErrorResponse("pipe_id or pwa_code is required"))
-	}
-
 	var pipeIDs []string
 	if pipeIDStr != "" {
 		for _, p := range strings.Split(pipeIDStr, ",") {
@@ -69,6 +65,12 @@ func (h *PipeHandler) GetGeometry(c *fiber.Ctx) error {
 				pipeIDs = append(pipeIDs, p)
 			}
 		}
+	}
+	if pwaCode == "" {
+		if len(pipeIDs) > 0 {
+			return c.Status(400).JSON(model.ErrorResponse("pwa_code is required before pipe_id"))
+		}
+		return c.Status(400).JSON(model.ErrorResponse("pwa_code is required"))
 	}
 
 	format := model.ParseGeomFormat(c.Query("format"))
@@ -115,17 +117,24 @@ func (h *PipeHandler) AssetsOnPipe(c *fiber.Ctx) error {
 	}
 
 	wkbGeometry := c.Query("wkb_geometry")
+	var lng, lat *float64
 	if wkbGeometry == "" {
-		return c.Status(400).JSON(model.ErrorResponse("wkb_geometry is required"))
+		lngValue, lngErr := strconv.ParseFloat(c.Query("lng"), 64)
+		latValue, latErr := strconv.ParseFloat(c.Query("lat"), 64)
+		if lngErr != nil || latErr != nil {
+			return c.Status(400).JSON(model.ErrorResponse("wkb_geometry is required, or provide both lng and lat"))
+		}
+		lng = &lngValue
+		lat = &latValue
 	}
 
 	assetType := c.Query("asset_type")
-	if assetType != "meter" && assetType != "valve" && assetType != "leakpoint" {
-		return c.Status(400).JSON(model.ErrorResponse("asset_type must be meter, valve, or leakpoint"))
+	if assetType != "meter" && assetType != "bl_customer" && assetType != "valve" && assetType != "leakpoint" && assetType != "firehydrant" {
+		return c.Status(400).JSON(model.ErrorResponse("asset_type must be one of bl_customer, meter, valve, leakpoint, or firehydrant"))
 	}
 
 	format := model.ParseGeomFormat(c.Query("format"))
-	results, err := h.pipeRepo.GetAssetsOnPipe(c.Context(), region, wkbGeometry, assetType, format)
+	results, err := h.pipeRepo.GetAssetsOnPipe(c.Context(), region, wkbGeometry, lng, lat, assetType, format)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}
