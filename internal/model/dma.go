@@ -35,6 +35,20 @@ type DMAPopulation struct {
 	Business   int `json:"business"`
 }
 
+// DMAStats holds merged usage and population statistics within a DMA.
+type DMAStats struct {
+	TotalWtr           float64 `json:"total_wtr"`
+	HouseWtr           float64 `json:"house_wtr"`
+	GovernmentWtr      float64 `json:"government_wtr"`
+	BusinessSmallWtr   float64 `json:"business_small_wtr"`
+	BusinessLargeWtr   float64 `json:"business_large_wtr"`
+	TotalCount         int     `json:"total_count"`
+	HouseCount         int     `json:"house_count"`
+	GovernmentCount    int     `json:"government_count"`
+	BusinessSmallCount int     `json:"business_small_count"`
+	BusinessLargeCount int     `json:"business_large_count"`
+}
+
 // DMAPipeLength holds the total pipe length within a DMA.
 type DMAPipeLength struct {
 	TotalLength float64 `json:"total_length"`

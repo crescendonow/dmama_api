@@ -110,6 +110,50 @@ func (r *CustomerRepo) CountPopulationInDMA(ctx context.Context, region int, pwa
 	return &result, nil
 }
 
+// GetStatsInDMA returns merged usage sums and population counts within a DMA via direct DB-side join. (Endpoint stats)
+func (r *CustomerRepo) GetStatsInDMA(ctx context.Context, region int, pwaCode, dmaID, column string) (*model.DMAStats, error) {
+	if err := ValidateColumn(column); err != nil {
+		return nil, err
+	}
+
+	tbl := TableName("giswebm_stamp", region, "bl_customer")
+	query := fmt.Sprintf(`
+		SELECT
+			COALESCE(SUM(bl.%s), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype IN ('11','12','13','14','15') THEN bl.%s ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype IN ('21','22','24','25','27') THEN bl.%s ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype IN ('23','26','28','29') THEN bl.%s ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype LIKE '3%%' THEN bl.%s ELSE 0 END), 0),
+			COALESCE(COUNT(*) FILTER (WHERE bl.%s > -1), 0),
+			COALESCE(COUNT(*) FILTER (WHERE bl.usetype LIKE '1%%'), 0),
+			COALESCE(COUNT(*) FILTER (WHERE bl.usetype IN ('21','22','24','25','27')), 0),
+			COALESCE(COUNT(*) FILTER (WHERE bl.usetype IN ('23','26','28','29')), 0),
+			COALESCE(COUNT(*) FILTER (WHERE bl.usetype LIKE '3%%'), 0)
+		FROM pwa_dma.dma_boundary AS dma
+		JOIN %s AS bl ON bl.pwa_code = dma.pwa_code
+		WHERE dma.pwa_code = $1
+			AND dma.dma_id = $2
+			AND ST_Intersects(
+				dma.wkb_geometry,
+				CASE
+					WHEN ST_SRID(bl.wkb_geometry) = ST_SRID(dma.wkb_geometry) THEN bl.wkb_geometry
+					WHEN ST_SRID(bl.wkb_geometry) = 0 THEN ST_SetSRID(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
+					ELSE ST_Transform(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
+				END
+			)`,
+		column, column, column, column, column, column, tbl)
+
+	var result model.DMAStats
+	err := r.pool.QueryRow(ctx, query, pwaCode, dmaID).Scan(
+		&result.TotalWtr, &result.HouseWtr, &result.GovernmentWtr, &result.BusinessSmallWtr, &result.BusinessLargeWtr,
+		&result.TotalCount, &result.HouseCount, &result.GovernmentCount, &result.BusinessSmallCount, &result.BusinessLargeCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 // CountPopulationByDMA counts customers by type within a DMA via direct DB-side join.
 // This avoids round-tripping the DMA geometry through the application layer.
 func (r *CustomerRepo) CountPopulationByDMA(ctx context.Context, region int, pwaCode, dmaID, column string) (*model.DMAPopulation, error) {

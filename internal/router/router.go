@@ -38,6 +38,7 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, cfg *config.Config) {
 	api.Get("/dma/boundary", dmaH.GetBoundary)
 	api.Get("/dma/usage", dmaH.GetUsage)
 	api.Get("/dma/population", dmaH.GetPopulation)
+	api.Get("/dma/stats", dmaH.GetStats)
 	api.Get("/dma/pipe-length", dmaH.GetPipeLength)
 	api.Get("/dma/map", dmaH.GetMapData)
 	api.Get("/dma/usage-v2", dmaH.GetUsageV2)

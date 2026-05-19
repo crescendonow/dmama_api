@@ -112,11 +112,8 @@
           <a href="#ep-dma-boundary" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ขอบเขต DMA
           </a>
-          <a href="#ep-dma-usage" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
-            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ปริมาณการใช้น้ำ
-          </a>
-          <a href="#ep-dma-population" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
-            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> จำนวนผู้ใช้น้ำ
+          <a href="#ep-dma-stats" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> รวมใช้น้ำ+ผู้ใช้
           </a>
           <a href="#ep-dma-pipe-length" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ความยาวท่อ
@@ -563,13 +560,13 @@ res = requests.get(
         </div>
       </section>
 
-      <!-- EP4: DMA Usage -->
-      <section id="ep-dma-usage" class="endpoint-section mb-12">
+      <!-- EP5: DMA Stats -->
+      <section id="ep-dma-stats" class="endpoint-section mb-12">
         <div class="flex items-center gap-3 mb-3">
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
-          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/usage</code>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/stats</code>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">สรุปการใช้น้ำแยกตามประเภทภายใน DMA โดยใช้ ST_CONTAINS</p>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">รวมยอดการใช้น้ำ (suffix <code class="text-xs">_wtr</code>) และจำนวนผู้ใช้น้ำ (suffix <code class="text-xs">_count</code>) แยกตามประเภทภายใน DMA โดยใช้ ST_INTERSECTS</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
         <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
           <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
@@ -586,38 +583,17 @@ res = requests.get(
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
   <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
   <span class="text-sky-400">"data"</span>: {
-    <span class="text-sky-400">"total"</span>: <span class="text-amber-300">15000</span>,
-    <span class="text-sky-400">"house"</span>: <span class="text-amber-300">10000</span>,
-    <span class="text-sky-400">"government"</span>: <span class="text-amber-300">2000</span>,
-    <span class="text-sky-400">"business_small"</span>: <span class="text-amber-300">1500</span>,
-    <span class="text-sky-400">"business_large"</span>: <span class="text-amber-300">1499</span>
+    <span class="text-sky-400">"total_wtr"</span>: <span class="text-amber-300">15000.5</span>,
+    <span class="text-sky-400">"house_wtr"</span>: <span class="text-amber-300">10000.25</span>,
+    <span class="text-sky-400">"government_wtr"</span>: <span class="text-amber-300">2000.5</span>,
+    <span class="text-sky-400">"business_small_wtr"</span>: <span class="text-amber-300">1500.75</span>,
+    <span class="text-sky-400">"business_large_wtr"</span>: <span class="text-amber-300">1499.0</span>,
+    <span class="text-sky-400">"total_count"</span>: <span class="text-amber-300">450</span>,
+    <span class="text-sky-400">"house_count"</span>: <span class="text-amber-300">350</span>,
+    <span class="text-sky-400">"government_count"</span>: <span class="text-amber-300">50</span>,
+    <span class="text-sky-400">"business_small_count"</span>: <span class="text-amber-300">30</span>,
+    <span class="text-sky-400">"business_large_count"</span>: <span class="text-amber-300">20</span>
   }
-}</code></pre>
-        </div>
-      </section>
-
-      <!-- EP5: DMA Population -->
-      <section id="ep-dma-population" class="endpoint-section mb-12">
-        <div class="flex items-center gap-3 mb-3">
-          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
-          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/population</code>
-        </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">นับจำนวนผู้ใช้น้ำแยกตามประเภทภายใน DMA โดยใช้ ST_INTERSECTS</p>
-        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
-        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
-          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
-          <tbody>
-            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัสสาขา pwa_code</td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">dma_id</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัส DMA</td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">เขต 1-10 (หรือ auto-resolve)</td></tr>
-          </tbody>
-        </table>
-        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
-        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
-          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
-  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
-  <span class="text-sky-400">"data"</span>: { <span class="text-sky-400">"total"</span>: <span class="text-amber-300">450</span>, <span class="text-sky-400">"house"</span>: <span class="text-amber-300">350</span>, <span class="text-sky-400">"government"</span>: <span class="text-amber-300">50</span>, <span class="text-sky-400">"business"</span>: <span class="text-amber-300">50</span> }
 }</code></pre>
         </div>
       </section>

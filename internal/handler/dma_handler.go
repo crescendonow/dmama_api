@@ -143,6 +143,28 @@ func (h *DMAHandler) GetPopulation(c *fiber.Ctx) error {
 	return c.JSON(model.SuccessResponse(result))
 }
 
+// GetStats returns merged usage and population statistics for a DMA. (Endpoint stats)
+// GET /api/dma/stats?pwa_code=5531011&dma_id=1&column=prswtusg
+func (h *DMAHandler) GetStats(c *fiber.Ctx) error {
+	region, pwaCode, err := resolveRegion(c)
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+	}
+
+	dmaID := c.Query("dma_id")
+	column := c.Query("column", "prswtusg")
+
+	if pwaCode == "" || dmaID == "" {
+		return c.Status(400).JSON(model.ErrorResponse("pwa_code and dma_id are required"))
+	}
+
+	result, err := h.dmaService.GetStats(c.Context(), pwaCode, dmaID, column, region)
+	if err != nil {
+		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+	return c.JSON(model.SuccessResponse(result))
+}
+
 // GetPipeLength calculates pipe length within a DMA. (Endpoint 6)
 // GET /api/dma/pipe-length?pwa_code=5531011&dma_id=1&region=1
 func (h *DMAHandler) GetPipeLength(c *fiber.Ctx) error {

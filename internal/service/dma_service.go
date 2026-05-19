@@ -38,6 +38,11 @@ func (s *DMAService) GetPopulation(ctx context.Context, pwaCode, dmaID, column s
 	return s.customerRepo.CountPopulationByDMA(ctx, region, pwaCode, dmaID, column)
 }
 
+// GetStats returns merged usage and population statistics for a DMA. (Endpoint stats)
+func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string, region int) (*model.DMAStats, error) {
+	return s.customerRepo.GetStatsInDMA(ctx, region, pwaCode, dmaID, column)
+}
+
 // GetPipeLength fetches DMA boundary then calculates pipe length. (Endpoint 6)
 func (s *DMAService) GetPipeLength(ctx context.Context, pwaCode, dmaID string, region int) (*model.DMAPipeLength, error) {
 	wkt, err := s.dmaRepo.GetBoundaryRaw(ctx, pwaCode, dmaID)
