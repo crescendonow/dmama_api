@@ -11,14 +11,16 @@ import (
 type DMAService struct {
 	dmaRepo      *repository.DMARepo
 	customerRepo *repository.CustomerRepo
+	meterRepo    *repository.MeterRepo
 	pipeRepo     *repository.PipeRepo
 	leakRepo     *repository.LeakpointRepo
 }
 
-func NewDMAService(dmaRepo *repository.DMARepo, customerRepo *repository.CustomerRepo, pipeRepo *repository.PipeRepo, leakRepo *repository.LeakpointRepo) *DMAService {
+func NewDMAService(dmaRepo *repository.DMARepo, customerRepo *repository.CustomerRepo, meterRepo *repository.MeterRepo, pipeRepo *repository.PipeRepo, leakRepo *repository.LeakpointRepo) *DMAService {
 	return &DMAService{
 		dmaRepo:      dmaRepo,
 		customerRepo: customerRepo,
+		meterRepo:    meterRepo,
 		pipeRepo:     pipeRepo,
 		leakRepo:     leakRepo,
 	}
@@ -41,6 +43,11 @@ func (s *DMAService) GetPopulation(ctx context.Context, pwaCode, dmaID, column s
 // GetStats returns merged usage and population statistics for a DMA. (Endpoint stats)
 func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string, region int) (*model.DMAStats, error) {
 	return s.customerRepo.GetStatsInDMA(ctx, region, pwaCode, dmaID, column)
+}
+
+// GetDailyMeterCount counts active meters within a DMA. The column parameter is accepted by the handler for stats payload compatibility but is not used here.
+func (s *DMAService) GetDailyMeterCount(ctx context.Context, pwaCode, dmaID string, region int) (*model.DMADailyMeterCount, error) {
+	return s.meterRepo.CountDailyMetersInDMA(ctx, region, pwaCode, dmaID)
 }
 
 // GetPipeLength fetches DMA boundary then calculates pipe length. (Endpoint 6)

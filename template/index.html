@@ -113,7 +113,10 @@
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ขอบเขต DMA
           </a>
           <a href="#ep-dma-stats" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
-            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> รวมใช้น้ำ+ผู้ใช้
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ปริมาณการใช้น้ำและผู้ใช้น้ำใน DMA
+          </a>
+          <a href="#ep-dma-daily-metercount" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> จำนวนมาตรวัดน้ำรายวันใน DMA
           </a>
           <a href="#ep-dma-pipe-length" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ความยาวท่อ
@@ -181,7 +184,7 @@
         </div>
         <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center border border-slate-200 dark:border-slate-700">
-            <div class="text-2xl font-bold text-primary-600 dark:text-sky-400">17</div>
+            <div class="text-2xl font-bold text-primary-600 dark:text-sky-400">18</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">Endpoints</div>
           </div>
           <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center border border-slate-200 dark:border-slate-700">
@@ -353,7 +356,7 @@ res = requests.get(
             <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">Current collection highlights</h3>
             <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
               <li>Pipe: <code class="text-xs">assign-logger</code>, <code class="text-xs">geometry</code>, <code class="text-xs">at-leakpoint</code>, <code class="text-xs">assets</code></li>
-              <li>DMA: <code class="text-xs">boundary</code>, <code class="text-xs">usage</code>, <code class="text-xs">usage-v2</code>, <code class="text-xs">pipe-length-clipped</code></li>
+              <li>DMA: <code class="text-xs">boundary</code>, <code class="text-xs">usage</code>, <code class="text-xs">daily_metercount</code>, <code class="text-xs">pipe-length-clipped</code></li>
               <li>Shared data: <code class="text-xs">office</code>, <code class="text-xs">waterworks</code></li>
               <li>Spatial tools: <code class="text-xs">asset/nearest</code>, <code class="text-xs">asset/in-area</code></li>
             </ul>
@@ -593,6 +596,35 @@ res = requests.get(
     <span class="text-sky-400">"government_count"</span>: <span class="text-amber-300">50</span>,
     <span class="text-sky-400">"business_small_count"</span>: <span class="text-amber-300">30</span>,
     <span class="text-sky-400">"business_large_count"</span>: <span class="text-amber-300">20</span>
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- EP18: DMA Daily Meter Count -->
+      <section id="ep-dma-daily-metercount" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/daily_metercount</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">นับจำนวนมาตรวัดน้ำภายใน DMA จากตาราง <code class="text-xs">oracle.r1_meter</code> ถึง <code class="text-xs">oracle.r10_meter</code> ตามเขต โดยใช้ ST_Intersects และกรอง <code class="text-xs">custstat IN ('1','2','3','4')</code></p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัสสาขา pwa_code</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">dma_id</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัส DMA</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">column</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">ไม่ต้องส่งก็ได้ และ endpoint นี้ไม่ใช้ค่า <code class="text-xs">column</code>; คืนเฉพาะ <code class="text-xs">meter_count</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">เขต 1-10 (หรือ auto-resolve จาก pwa_code)</td></tr>
+          </tbody>
+        </table>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"data"</span>: {
+    <span class="text-sky-400">"meter_count"</span>: <span class="text-amber-300">240</span>
   }
 }</code></pre>
         </div>

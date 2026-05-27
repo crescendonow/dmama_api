@@ -22,11 +22,12 @@ type DMAHandler struct {
 func NewDMAHandler(pool *pgxpool.Pool) *DMAHandler {
 	dmaRepo := repository.NewDMARepo(pool)
 	customerRepo := repository.NewCustomerRepo(pool)
+	meterRepo := repository.NewMeterRepo(pool)
 	pipeRepo := repository.NewPipeRepo(pool)
 	leakRepo := repository.NewLeakpointRepo(pool)
 	return &DMAHandler{
 		dmaRepo:    dmaRepo,
-		dmaService: service.NewDMAService(dmaRepo, customerRepo, pipeRepo, leakRepo),
+		dmaService: service.NewDMAService(dmaRepo, customerRepo, meterRepo, pipeRepo, leakRepo),
 		pipeRepo:   pipeRepo,
 		leakRepo:   leakRepo,
 	}
@@ -159,6 +160,26 @@ func (h *DMAHandler) GetStats(c *fiber.Ctx) error {
 	}
 
 	result, err := h.dmaService.GetStats(c.Context(), pwaCode, dmaID, column, region)
+	if err != nil {
+		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+	return c.JSON(model.SuccessResponse(result))
+}
+
+// GetDailyMeterCount counts active meters within a DMA. The optional column query param is ignored.
+// GET /api/dma/daily_metercount?pwa_code=5531011&dma_id=1&column=prswtusg
+func (h *DMAHandler) GetDailyMeterCount(c *fiber.Ctx) error {
+	region, pwaCode, err := resolveRegion(c)
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+	}
+
+	dmaID := c.Query("dma_id")
+	if pwaCode == "" || dmaID == "" {
+		return c.Status(400).JSON(model.ErrorResponse("pwa_code and dma_id are required"))
+	}
+
+	result, err := h.dmaService.GetDailyMeterCount(c.Context(), pwaCode, dmaID, region)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}

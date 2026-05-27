@@ -49,6 +49,11 @@ type DMAStats struct {
 	BusinessLargeCount int     `json:"business_large_count"`
 }
 
+// DMADailyMeterCount holds the number of active meters within a DMA.
+type DMADailyMeterCount struct {
+	MeterCount int `json:"meter_count"`
+}
+
 // DMAPipeLength holds the total pipe length within a DMA.
 type DMAPipeLength struct {
 	TotalLength float64 `json:"total_length"`
