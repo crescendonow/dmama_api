@@ -35,18 +35,22 @@ type DMAPopulation struct {
 	Business   int `json:"business"`
 }
 
+// DMAPopulationStats holds population counts split by the stats endpoint categories.
+type DMAPopulationStats struct {
+	Total         int `json:"total"`
+	House         int `json:"house"`
+	Government    int `json:"government"`
+	BusinessSmall int `json:"business_small"`
+	BusinessLarge int `json:"business_large"`
+}
+
 // DMAStats holds merged usage and population statistics within a DMA.
 type DMAStats struct {
-	TotalWtr           float64 `json:"total_wtr"`
-	HouseWtr           float64 `json:"house_wtr"`
-	GovernmentWtr      float64 `json:"government_wtr"`
-	BusinessSmallWtr   float64 `json:"business_small_wtr"`
-	BusinessLargeWtr   float64 `json:"business_large_wtr"`
-	TotalCount         int     `json:"total_count"`
-	HouseCount         int     `json:"house_count"`
-	GovernmentCount    int     `json:"government_count"`
-	BusinessSmallCount int     `json:"business_small_count"`
-	BusinessLargeCount int     `json:"business_large_count"`
+	PwaCode    string             `json:"pwa_code"`
+	DmaID      string             `json:"dma_id"`
+	Column     string             `json:"column"`
+	Usage      DMAUsage           `json:"usage"`
+	Population DMAPopulationStats `json:"population"`
 }
 
 // DMADailyMeterCount holds the number of active meters within a DMA.

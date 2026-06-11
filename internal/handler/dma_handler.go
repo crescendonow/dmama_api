@@ -3,6 +3,7 @@ package handler
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"dmama_api/internal/model"
 	"dmama_api/internal/repository"
@@ -153,15 +154,21 @@ func (h *DMAHandler) GetStats(c *fiber.Ctx) error {
 	}
 
 	dmaID := c.Query("dma_id")
-	column := c.Query("column", "prswtusg")
-
 	if pwaCode == "" || dmaID == "" {
 		return c.Status(400).JSON(model.ErrorResponse("pwa_code and dma_id are required"))
+	}
+
+	column, err := service.ResolveStatsColumn(c.Query("year"), c.Query("month"), c.Query("column"), time.Now())
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
 	}
 
 	result, err := h.dmaService.GetStats(c.Context(), pwaCode, dmaID, column, region)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+	if result == nil {
+		return c.Status(404).JSON(model.ErrorResponse("DMA not found for pwa_code=" + pwaCode + ", dma_id=" + dmaID))
 	}
 	return c.JSON(model.SuccessResponse(result))
 }

@@ -569,33 +569,54 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/stats</code>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">รวมยอดการใช้น้ำ (suffix <code class="text-xs">_wtr</code>) และจำนวนผู้ใช้น้ำ (suffix <code class="text-xs">_count</code>) แยกตามประเภทภายใน DMA โดยใช้ ST_INTERSECTS</p>
+        <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
+          ใช้สำหรับดึงสถิติการใช้น้ำและจำนวนผู้ใช้น้ำรายเดือนใน DMA โดยแนะนำให้ส่ง <code class="text-xs">year</code> + <code class="text-xs">month</code>. ยังรองรับ <code class="text-xs">column</code> เพื่อ backward compatibility เช่น <code class="text-xs">prswtusg</code>, <code class="text-xs">lstwtusg1..12</code>.
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">คืนข้อมูลเป็น JSON แบบ nested แยกเป็น <code class="text-xs">usage</code> และ <code class="text-xs">population</code> พร้อมระบุ <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, และ <code class="text-xs">column</code> ที่ใช้ query.</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
         <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
           <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
           <tbody>
-            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัสสาขา pwa_code</td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">dma_id</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัส DMA</td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">column</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">คอลัมน์ที่จะ SUM (default: <code class="text-xs">prswtusg</code>). ค่าที่อนุญาต: <code class="text-xs">prswtusg, use_water, use_jan-use_dec</code></td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">เขต 1-10 (หรือ auto-resolve จาก pwa_code)</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัสสาขา เช่น <code class="text-xs">5541026</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">dma_id</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัส DMA เช่น <code class="text-xs">1</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">year</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-sky-600 dark:text-sky-300">preferred</span></td><td class="px-4 py-2">ปีข้อมูลที่ต้องการ เช่น <code class="text-xs">2025</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">month</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-sky-600 dark:text-sky-300">preferred</span></td><td class="px-4 py-2">เดือนข้อมูลที่ต้องการ <code class="text-xs">1..12</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">column</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">รองรับ backward compatibility เช่น <code class="text-xs">prswtusg</code>, <code class="text-xs">lstwtusg1..12</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">เขต <code class="text-xs">1..10</code>; ถ้าไม่ส่งจะ resolve จาก <code class="text-xs">pwa_code</code></td></tr>
           </tbody>
         </table>
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
+          <div class="font-semibold mb-1">Rules</div>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>ถ้าส่ง <code class="text-xs">year/month</code> ให้ใช้ <code class="text-xs">year/month</code> เป็นหลัก แม้จะส่ง <code class="text-xs">column</code> มาด้วย</li>
+            <li>ถ้าไม่ส่ง <code class="text-xs">year/month</code> ให้ใช้ <code class="text-xs">column</code></li>
+            <li>ถ้าไม่ส่ง <code class="text-xs">column</code> ให้ default เป็น <code class="text-xs">prswtusg</code></li>
+            <li>validate column ด้วย allowlist เท่านั้น ห้ามนำ input ไปต่อ SQL โดยตรง</li>
+          </ul>
+        </div>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
   <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
   <span class="text-sky-400">"data"</span>: {
-    <span class="text-sky-400">"total_wtr"</span>: <span class="text-amber-300">15000.5</span>,
-    <span class="text-sky-400">"house_wtr"</span>: <span class="text-amber-300">10000.25</span>,
-    <span class="text-sky-400">"government_wtr"</span>: <span class="text-amber-300">2000.5</span>,
-    <span class="text-sky-400">"business_small_wtr"</span>: <span class="text-amber-300">1500.75</span>,
-    <span class="text-sky-400">"business_large_wtr"</span>: <span class="text-amber-300">1499.0</span>,
-    <span class="text-sky-400">"total_count"</span>: <span class="text-amber-300">450</span>,
-    <span class="text-sky-400">"house_count"</span>: <span class="text-amber-300">350</span>,
-    <span class="text-sky-400">"government_count"</span>: <span class="text-amber-300">50</span>,
-    <span class="text-sky-400">"business_small_count"</span>: <span class="text-amber-300">30</span>,
-    <span class="text-sky-400">"business_large_count"</span>: <span class="text-amber-300">20</span>
+    <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5541026"</span>,
+    <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"1"</span>,
+    <span class="text-sky-400">"column"</span>: <span class="text-emerald-400">"lstwtusg11"</span>,
+    <span class="text-sky-400">"usage"</span>: {
+      <span class="text-sky-400">"total"</span>: <span class="text-amber-300">170350.5</span>,
+      <span class="text-sky-400">"house"</span>: <span class="text-amber-300">111250</span>,
+      <span class="text-sky-400">"government"</span>: <span class="text-amber-300">536</span>,
+      <span class="text-sky-400">"business_small"</span>: <span class="text-amber-300">35057.25</span>,
+      <span class="text-sky-400">"business_large"</span>: <span class="text-amber-300">16281</span>
+    },
+    <span class="text-sky-400">"population"</span>: {
+      <span class="text-sky-400">"total"</span>: <span class="text-amber-300">7805</span>,
+      <span class="text-sky-400">"house"</span>: <span class="text-amber-300">6703</span>,
+      <span class="text-sky-400">"government"</span>: <span class="text-amber-300">5</span>,
+      <span class="text-sky-400">"business_small"</span>: <span class="text-amber-300">870</span>,
+      <span class="text-sky-400">"business_large"</span>: <span class="text-amber-300">227</span>
+    }
   }
 }</code></pre>
         </div>

@@ -15,6 +15,9 @@ var allowedUsageColumns = map[string]bool{
 	"use_jan": true, "use_feb": true, "use_mar": true, "use_apr": true,
 	"use_may": true, "use_jun": true, "use_jul": true, "use_aug": true,
 	"use_sep": true, "use_oct": true, "use_nov": true, "use_dec": true,
+	"lstwtusg1": true, "lstwtusg2": true, "lstwtusg3": true, "lstwtusg4": true,
+	"lstwtusg5": true, "lstwtusg6": true, "lstwtusg7": true, "lstwtusg8": true,
+	"lstwtusg9": true, "lstwtusg10": true, "lstwtusg11": true, "lstwtusg12": true,
 }
 
 type CustomerRepo struct {
@@ -119,20 +122,20 @@ func (r *CustomerRepo) GetStatsInDMA(ctx context.Context, region int, pwaCode, d
 	tbl := TableName("giswebm_stamp", region, "bl_customer")
 	query := fmt.Sprintf(`
 		SELECT
+			COUNT(dma.dma_id),
 			COALESCE(SUM(bl.%s), 0),
 			COALESCE(SUM(CASE WHEN bl.usetype IN ('11','12','13','14','15') THEN bl.%s ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN bl.usetype IN ('21','22','24','25','27') THEN bl.%s ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN bl.usetype IN ('23','26','28','29') THEN bl.%s ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN bl.usetype LIKE '3%%' THEN bl.%s ELSE 0 END), 0),
-			COALESCE(COUNT(*) FILTER (WHERE bl.%s > -1), 0),
-			COALESCE(COUNT(*) FILTER (WHERE bl.usetype LIKE '1%%'), 0),
-			COALESCE(COUNT(*) FILTER (WHERE bl.usetype IN ('21','22','24','25','27')), 0),
-			COALESCE(COUNT(*) FILTER (WHERE bl.usetype IN ('23','26','28','29')), 0),
-			COALESCE(COUNT(*) FILTER (WHERE bl.usetype LIKE '3%%'), 0)
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype LIKE '1%%' AND bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype IN ('21','22','24','25','27') AND bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype IN ('23','26','28','29') AND bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype LIKE '3%%' AND bl.%s > -1), 0)
 		FROM pwa_dma.dma_boundary AS dma
-		JOIN %s AS bl ON bl.pwa_code = dma.pwa_code
-		WHERE dma.pwa_code = $1
-			AND dma.dma_id = $2
+		LEFT JOIN %s AS bl
+			ON bl.pwa_code = dma.pwa_code
 			AND ST_Intersects(
 				dma.wkb_geometry,
 				CASE
@@ -140,17 +143,27 @@ func (r *CustomerRepo) GetStatsInDMA(ctx context.Context, region int, pwaCode, d
 					WHEN ST_SRID(bl.wkb_geometry) = 0 THEN ST_SetSRID(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
 					ELSE ST_Transform(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
 				END
-			)`,
-		column, column, column, column, column, column, tbl)
+			)
+		WHERE dma.pwa_code = $1
+			AND dma.dma_id = $2`,
+		column, column, column, column, column, column, column, column, column, column, tbl)
 
 	var result model.DMAStats
+	var dmaCount int
 	err := r.pool.QueryRow(ctx, query, pwaCode, dmaID).Scan(
-		&result.TotalWtr, &result.HouseWtr, &result.GovernmentWtr, &result.BusinessSmallWtr, &result.BusinessLargeWtr,
-		&result.TotalCount, &result.HouseCount, &result.GovernmentCount, &result.BusinessSmallCount, &result.BusinessLargeCount,
+		&dmaCount,
+		&result.Usage.Total, &result.Usage.House, &result.Usage.Government, &result.Usage.BusinessSmall, &result.Usage.BusinessLarge,
+		&result.Population.Total, &result.Population.House, &result.Population.Government, &result.Population.BusinessSmall, &result.Population.BusinessLarge,
 	)
 	if err != nil {
 		return nil, err
 	}
+	if dmaCount == 0 {
+		return nil, nil
+	}
+	result.PwaCode = pwaCode
+	result.DmaID = dmaID
+	result.Column = column
 	return &result, nil
 }
 
