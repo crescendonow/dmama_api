@@ -3,6 +3,8 @@ package service
 import (
 	"testing"
 	"time"
+
+	"dmama_api/internal/model"
 )
 
 func TestResolveStatsColumnFromYearMonthBeforeBillingDay(t *testing.T) {
@@ -62,5 +64,37 @@ func TestResolveStatsColumnRejectsInvalidInput(t *testing.T) {
 				t.Fatal("expected error")
 			}
 		})
+	}
+}
+
+func TestPrepareDMAStatsResponseUsesRequestMetadata(t *testing.T) {
+	input := &model.DMAStats{
+		PwaCode: "5532011",
+		DmaID:   "2",
+		Column:  "lstwtusg1",
+		Usage: model.DMAUsage{
+			Total: 46493,
+		},
+		Population: model.DMAPopulationStats{
+			Total: 1986,
+		},
+	}
+
+	result := prepareDMAStatsResponse(input, "5532013", "6", "prswtusg")
+
+	if result.PwaCode != "5532013" {
+		t.Fatalf("expected pwa_code from request, got %s", result.PwaCode)
+	}
+	if result.DmaID != "6" {
+		t.Fatalf("expected dma_id from request, got %s", result.DmaID)
+	}
+	if result.Column != "prswtusg" {
+		t.Fatalf("expected column from request, got %s", result.Column)
+	}
+	if input.PwaCode != "5532011" || input.DmaID != "2" || input.Column != "lstwtusg1" {
+		t.Fatal("prepareDMAStatsResponse mutated input stats")
+	}
+	if result.Usage.Total != 46493 || result.Population.Total != 1986 {
+		t.Fatal("prepareDMAStatsResponse changed numeric stats")
 	}
 }

@@ -14,10 +14,11 @@ import (
 )
 
 type DMAHandler struct {
-	dmaRepo    *repository.DMARepo
-	dmaService *service.DMAService
-	pipeRepo   *repository.PipeRepo
-	leakRepo   *repository.LeakpointRepo
+	dmaRepo      *repository.DMARepo
+	dmaService   *service.DMAService
+	customerRepo *repository.CustomerRepo
+	pipeRepo     *repository.PipeRepo
+	leakRepo     *repository.LeakpointRepo
 }
 
 func NewDMAHandler(pool *pgxpool.Pool) *DMAHandler {
@@ -27,10 +28,11 @@ func NewDMAHandler(pool *pgxpool.Pool) *DMAHandler {
 	pipeRepo := repository.NewPipeRepo(pool)
 	leakRepo := repository.NewLeakpointRepo(pool)
 	return &DMAHandler{
-		dmaRepo:    dmaRepo,
-		dmaService: service.NewDMAService(dmaRepo, customerRepo, meterRepo, pipeRepo, leakRepo),
-		pipeRepo:   pipeRepo,
-		leakRepo:   leakRepo,
+		dmaRepo:      dmaRepo,
+		dmaService:   service.NewDMAService(dmaRepo, customerRepo, meterRepo, pipeRepo, leakRepo),
+		customerRepo: customerRepo,
+		pipeRepo:     pipeRepo,
+		leakRepo:     leakRepo,
 	}
 }
 
@@ -234,6 +236,27 @@ func (h *DMAHandler) GetMapData(c *fiber.Ctx) error {
 	}
 	count := len(items)
 	return c.JSON(model.SuccessWithCount(items, count))
+}
+
+// GetCustomers fetches customer rows inside a DMA boundary for selected use types.
+// GET /api/dma/customers?pwa_code=5531011&dma_id=1
+func (h *DMAHandler) GetCustomers(c *fiber.Ctx) error {
+	pwaCode := c.Query("pwa_code")
+	dmaID := c.Query("dma_id")
+	if pwaCode == "" || dmaID == "" {
+		return c.Status(400).JSON(model.ErrorResponse("pwa_code and dma_id are required"))
+	}
+
+	region, err := repository.RegionFromPWACode(pwaCode)
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+	}
+
+	customers, err := h.customerRepo.GetCustomersInDMA(c.Context(), region, pwaCode, dmaID)
+	if err != nil {
+		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+	return c.JSON(model.SuccessWithCount(customers, len(customers)))
 }
 
 // GetUsageV2 fetches DMA usage via direct spatial join. (Endpoint 14)

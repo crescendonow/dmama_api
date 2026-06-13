@@ -42,6 +42,7 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, cfg *config.Config) {
 	api.Get("/dma/daily_metercount", dmaH.GetDailyMeterCount)
 	api.Get("/dma/pipe-length", dmaH.GetPipeLength)
 	api.Get("/dma/map", dmaH.GetMapData)
+	api.Get("/dma/customers", dmaH.GetCustomers)
 	api.Get("/dma/usage-v2", dmaH.GetUsageV2)
 	api.Get("/dma/leakpoints-by-size", dmaH.LeakpointsBySize)
 	api.Get("/dma/pipe-length-clipped", dmaH.PipeLengthClipped)

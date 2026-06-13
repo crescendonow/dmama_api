@@ -18,6 +18,28 @@ type DMAMapItem struct {
 	Geometry *string `json:"geometry,omitempty"`
 }
 
+// DMACustomer represents a customer point inside a DMA boundary.
+type DMACustomer struct {
+	DmaID      string   `json:"dma_id"`
+	DmaName    *string  `json:"dma_name"`
+	PwaCode    string   `json:"pwa_code"`
+	IsCustomer *string  `json:"is_customer"`
+	Custstat   *string  `json:"custstat"`
+	Meterstat  *string  `json:"meterstat"`
+	Usetype    *string  `json:"usetype"`
+	Custname   *string  `json:"custname"`
+	Latitude   *float64 `json:"latitude"`
+	Longitude  *float64 `json:"longitude"`
+	Custaddr   *string  `json:"custaddr"`
+	Custcode   *string  `json:"custcode"`
+	Meterno    *string  `json:"meterno"`
+	Mtrrdroute *string  `json:"mtrrdroute"`
+	Mtrseq     *string  `json:"mtrseq"`
+	Metermake  *string  `json:"metermake"`
+	Metersize  *string  `json:"metersize"`
+	Prswtusg   *float64 `json:"prswtusg"`
+}
+
 // DMAUsage holds aggregated usage statistics within a DMA.
 type DMAUsage struct {
 	Total         float64 `json:"total"`

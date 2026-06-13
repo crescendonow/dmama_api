@@ -51,3 +51,33 @@ func TestGetStatsRejectsInvalidColumn(t *testing.T) {
 		t.Fatalf("expected 400, got %d", resp.StatusCode)
 	}
 }
+
+func TestGetCustomersRejectsMissingParams(t *testing.T) {
+	app := fiber.New()
+	h := NewDMAHandler(nil)
+	app.Get("/api/dma/customers", h.GetCustomers)
+
+	req := httptest.NewRequest("GET", "/api/dma/customers?pwa_code=5531011", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test returned error: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestGetCustomersRejectsInvalidPWACode(t *testing.T) {
+	app := fiber.New()
+	h := NewDMAHandler(nil)
+	app.Get("/api/dma/customers", h.GetCustomers)
+
+	req := httptest.NewRequest("GET", "/api/dma/customers?pwa_code=9999011&dma_id=1", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test returned error: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+}

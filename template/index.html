@@ -124,6 +124,9 @@
           <a href="#ep-dma-map" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> แสดงขอบเขต DMA
           </a>
+          <a href="#ep-dma-customers" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ผู้ใช้น้ำใน DMA
+          </a>
           <a href="#ep-dma-usage-v2" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ปริมาณการใช้น้ำ-v2
           </a>
@@ -701,6 +704,70 @@ res = requests.get(
   <span class="text-sky-400">"count"</span>: <span class="text-amber-300">5</span>
 }</code></pre>
         </div>
+      </section>
+
+      <!-- DMA Customers -->
+      <section id="ep-dma-customers" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/customers</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ดึงรายการผู้ใช้น้ำที่อยู่ภายในขอบเขต DMA ตาม <code class="text-xs">pwa_code</code> และ <code class="text-xs">dma_id</code> โดย service จะ resolve region จาก <code class="text-xs">pwa_code</code> และ filter เฉพาะ <code class="text-xs">usetype IN ('22','35')</code></p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>HTTP</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>GET /api/dma/customers?pwa_code=5531011&amp;dma_id=1</code></pre>
+        </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัสสาขา เช่น <code class="text-xs">5531011</code>; ใช้ resolve region เพื่อเลือกตารางผู้ใช้น้ำ</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">dma_id</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">รหัส DMA เช่น <code class="text-xs">1</code></td></tr>
+          </tbody>
+        </table>
+        <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
+          Endpoint นี้ไม่รับ <code class="text-xs">region</code>; ระบบจะ derive region จาก <code class="text-xs">pwa_code</code> เพื่อให้ตรงกับ mapping ของสาขาเสมอ. ถ้าไม่พบรายการผู้ใช้น้ำ จะคืน <code class="text-xs">success: true</code>, <code class="text-xs">data: []</code>, <code class="text-xs">count: 0</code>.
+        </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"data"</span>: [
+    {
+      <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"1"</span>,
+      <span class="text-sky-400">"dma_name"</span>: <span class="text-emerald-400">"DMA-001"</span>,
+      <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5531011"</span>,
+      <span class="text-sky-400">"is_customer"</span>: <span class="text-emerald-400">"true"</span>,
+      <span class="text-sky-400">"custstat"</span>: <span class="text-emerald-400">"1"</span>,
+      <span class="text-sky-400">"meterstat"</span>: <span class="text-emerald-400">"1"</span>,
+      <span class="text-sky-400">"usetype"</span>: <span class="text-emerald-400">"22"</span>,
+      <span class="text-sky-400">"custname"</span>: <span class="text-emerald-400">"Customer Name"</span>,
+      <span class="text-sky-400">"latitude"</span>: <span class="text-amber-300">13.9849</span>,
+      <span class="text-sky-400">"longitude"</span>: <span class="text-amber-300">101.6893</span>,
+      <span class="text-sky-400">"custaddr"</span>: <span class="text-emerald-400">"Customer address"</span>,
+      <span class="text-sky-400">"custcode"</span>: <span class="text-emerald-400">"5531011000001"</span>,
+      <span class="text-sky-400">"meterno"</span>: <span class="text-emerald-400">"12345678"</span>,
+      <span class="text-sky-400">"mtrrdroute"</span>: <span class="text-emerald-400">"01"</span>,
+      <span class="text-sky-400">"mtrseq"</span>: <span class="text-emerald-400">"0001"</span>,
+      <span class="text-sky-400">"metermake"</span>: <span class="text-emerald-400">"ABC"</span>,
+      <span class="text-sky-400">"metersize"</span>: <span class="text-emerald-400">"15"</span>,
+      <span class="text-sky-400">"prswtusg"</span>: <span class="text-amber-300">123.45</span>
+    }
+  ],
+  <span class="text-sky-400">"count"</span>: <span class="text-amber-300">1</span>
+}</code></pre>
+        </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Errors</h4>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">HTTP Status</th><th class="text-left px-4 py-2">Case</th><th class="text-left px-4 py-2">Message</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">missing parameter</td><td class="px-4 py-2"><code class="text-xs">pwa_code and dma_id are required</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">invalid/unknown pwa_code prefix</td><td class="px-4 py-2"><code class="text-xs">unknown pwa_code prefix: xxxx</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">500</td><td class="px-4 py-2">database/server error</td><td class="px-4 py-2">รายละเอียด error จาก server</td></tr>
+          </tbody>
+        </table>
       </section>
 
       <!-- EP14: DMA Usage V2 -->

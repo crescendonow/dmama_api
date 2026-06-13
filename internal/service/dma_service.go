@@ -61,7 +61,7 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 	if cached, ok := s.statsCache.Load(key); ok {
 		entry := cached.(statsCacheEntry)
 		if now.Before(entry.expiresAt) {
-			return cloneDMAStats(entry.value), nil
+			return prepareDMAStatsResponse(entry.value, pwaCode, dmaID, column), nil
 		}
 		s.statsCache.Delete(key)
 	}
@@ -71,6 +71,7 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 		if err != nil || result == nil {
 			return result, err
 		}
+		result = prepareDMAStatsResponse(result, pwaCode, dmaID, column)
 		s.statsCache.Store(key, statsCacheEntry{
 			value:     cloneDMAStats(result),
 			expiresAt: time.Now().Add(statsCacheTTL),
@@ -83,7 +84,7 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 	if value == nil {
 		return nil, nil
 	}
-	return cloneDMAStats(value.(*model.DMAStats)), nil
+	return prepareDMAStatsResponse(value.(*model.DMAStats), pwaCode, dmaID, column), nil
 }
 
 // GetDailyMeterCount counts active meters within a DMA. The column parameter is accepted by the handler for stats payload compatibility but is not used here.
@@ -147,4 +148,15 @@ func cloneDMAStats(stats *model.DMAStats) *model.DMAStats {
 	}
 	copied := *stats
 	return &copied
+}
+
+func prepareDMAStatsResponse(stats *model.DMAStats, pwaCode, dmaID, column string) *model.DMAStats {
+	copied := cloneDMAStats(stats)
+	if copied == nil {
+		return nil
+	}
+	copied.PwaCode = pwaCode
+	copied.DmaID = dmaID
+	copied.Column = column
+	return copied
 }

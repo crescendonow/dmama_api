@@ -6,6 +6,7 @@ import (
 
 	"dmama_api/internal/model"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -34,6 +35,118 @@ func ValidateColumn(col string) error {
 		return fmt.Errorf("invalid column: %s", col)
 	}
 	return nil
+}
+
+func dmaCustomersQuery(region int) string {
+	tbl := TableName("giswebm_stamp", region, "bl_customer")
+	return fmt.Sprintf(`
+		SELECT
+			d.dma_id,
+			d.dma_name,
+			d.pwa_code,
+			c.is_customer::text,
+			c.custstat::text,
+			c.meterstat::text,
+			c.usetype::text,
+			c.custname,
+			ST_Y(c.wkb_geometry) AS latitude,
+			ST_X(c.wkb_geometry) AS longitude,
+			c.custaddr,
+			c.custcode,
+			c.meterno,
+			c.mtrrdroute,
+			c.mtrseq,
+			c.metermake,
+			c.metersize,
+			c.prswtusg
+		FROM (
+			SELECT *
+			FROM pwa_dma.dma_boundary
+			WHERE dma_id = $1
+				AND pwa_code = $2
+		) d
+		JOIN %s c
+			ON c.pwa_code = d.pwa_code
+			AND d.wkb_geometry && c.wkb_geometry
+			AND ST_Intersects(d.wkb_geometry, c.wkb_geometry)
+		WHERE c.usetype IN ('22','35')`, tbl)
+}
+
+// GetCustomersInDMA returns customer rows inside a DMA boundary for selected use types.
+func (r *CustomerRepo) GetCustomersInDMA(ctx context.Context, region int, pwaCode, dmaID string) ([]model.DMACustomer, error) {
+	rows, err := r.pool.Query(ctx, dmaCustomersQuery(region), dmaID, pwaCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	customers := make([]model.DMACustomer, 0)
+	for rows.Next() {
+		var customer model.DMACustomer
+		var dmaName, isCustomer, custstat, meterstat, usetype, custname pgtype.Text
+		var custaddr, custcode, meterno, mtrrdroute, mtrseq, metermake, metersize pgtype.Text
+		var latitude, longitude, prswtusg pgtype.Float8
+
+		if err := rows.Scan(
+			&customer.DmaID,
+			&dmaName,
+			&customer.PwaCode,
+			&isCustomer,
+			&custstat,
+			&meterstat,
+			&usetype,
+			&custname,
+			&latitude,
+			&longitude,
+			&custaddr,
+			&custcode,
+			&meterno,
+			&mtrrdroute,
+			&mtrseq,
+			&metermake,
+			&metersize,
+			&prswtusg,
+		); err != nil {
+			return nil, err
+		}
+
+		customer.DmaName = textPtr(dmaName)
+		customer.IsCustomer = textPtr(isCustomer)
+		customer.Custstat = textPtr(custstat)
+		customer.Meterstat = textPtr(meterstat)
+		customer.Usetype = textPtr(usetype)
+		customer.Custname = textPtr(custname)
+		customer.Latitude = float8Ptr(latitude)
+		customer.Longitude = float8Ptr(longitude)
+		customer.Custaddr = textPtr(custaddr)
+		customer.Custcode = textPtr(custcode)
+		customer.Meterno = textPtr(meterno)
+		customer.Mtrrdroute = textPtr(mtrrdroute)
+		customer.Mtrseq = textPtr(mtrseq)
+		customer.Metermake = textPtr(metermake)
+		customer.Metersize = textPtr(metersize)
+		customer.Prswtusg = float8Ptr(prswtusg)
+		customers = append(customers, customer)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return customers, nil
+}
+
+func textPtr(value pgtype.Text) *string {
+	if !value.Valid {
+		return nil
+	}
+	decoded := decodeDBText(value.String)
+	return &decoded
+}
+
+func float8Ptr(value pgtype.Float8) *float64 {
+	if !value.Valid {
+		return nil
+	}
+	return &value.Float64
 }
 
 // SumUsageInDMA calculates usage sums by customer type within a DMA boundary. (Endpoint 4)
