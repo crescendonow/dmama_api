@@ -1,5 +1,6 @@
 note/ 
 .claude/ 
+.agents/
 .env 
 nginx.conf 
 # Binaries และ Executables
@@ -16,3 +17,4 @@ __debug_bin
 prof/
 .vscode/
 .idea/
+migrations/

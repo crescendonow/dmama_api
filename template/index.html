@@ -165,6 +165,37 @@
         </div>
       </div>
 
+      <!-- Feature CRUD Group -->
+      <div class="nav-group">
+        <button class="nav-group-toggle w-full flex items-center justify-between px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 font-medium">
+          <span>Feature CRUD</span>
+          <svg class="nav-arrow w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="nav-group-items hidden">
+          <a href="#ep-feature-validate" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-11 text-center text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded mr-1">POST</span> ตรวจสอบ topology
+          </a>
+          <a href="#ep-feature-create" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-11 text-center text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded mr-1">POST</span> สร้าง feature
+          </a>
+          <a href="#ep-feature-list" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> รายการ feature
+          </a>
+          <a href="#ep-feature-get" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> รายตัว
+          </a>
+          <a href="#ep-feature-update" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded mr-1">PUT</span> แก้ไข
+          </a>
+          <a href="#ep-feature-delete" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-14 text-center text-xs font-mono font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded mr-1">DEL</span> ลบ
+          </a>
+          <a href="#ep-feature-sync" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-11 text-center text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded mr-1">POST</span> sync mirror
+          </a>
+        </div>
+      </div>
+
       <div class="my-3 border-t border-slate-200 dark:border-slate-700"></div>
       <a href="#error-handling" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">การจัดการข้อผิดพลาด</a>
     </nav>
@@ -187,7 +218,7 @@
         </div>
         <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center border border-slate-200 dark:border-slate-700">
-            <div class="text-2xl font-bold text-primary-600 dark:text-sky-400">18</div>
+            <div class="text-2xl font-bold text-primary-600 dark:text-sky-400">25</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">Endpoints</div>
           </div>
           <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center border border-slate-200 dark:border-slate-700">
@@ -258,6 +289,10 @@ res = requests.get(
         </div>
         <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg p-4">
           <p class="text-sm text-amber-800 dark:text-amber-200"><strong>หมายเหตุ:</strong> ถ้า <code class="text-xs bg-amber-100 dark:bg-amber-900/40 px-1 rounded">DMAMA_KEY</code> ไม่ได้ตั้งค่าในไฟล์ .env การยืนยันตัวตนจะถูกปิด (dev mode)</p>
+        </div>
+        <div class="mt-4 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700/50 rounded-lg p-4 space-y-2">
+          <p class="text-sm text-sky-800 dark:text-sky-200"><strong>X-User-Id:</strong> สำหรับ endpoint ที่เขียนข้อมูล (Feature CRUD) แนบ header <code class="text-xs bg-sky-100 dark:bg-sky-900/40 px-1 rounded">X-User-Id</code> เช่น <code class="text-xs">10090</code> ระบบจะค้น <code class="text-xs">claystone.users</code> ด้วย <code class="text-xs">10090@pwa.co.th</code> เพื่อบันทึก <code class="text-xs">_createdBy</code>/<code class="text-xs">_updatedBy</code></p>
+          <p class="text-sm text-sky-800 dark:text-sky-200"><strong>Usage logging:</strong> ทุก request ภายใต้ <code class="text-xs bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/api</code> (ยกเว้น <code class="text-xs">/health</code>) จะถูกบันทึกปริมาณข้อมูล (KB/MB/GB), ระยะเวลา และช่วงเวลาลง <code class="text-xs">auth_logs.dmama_use</code> โดยอ้างอิงจาก API key ที่เรียก</p>
         </div>
       </section>
 
@@ -992,6 +1027,180 @@ res = requests.get(
     <span class="text-sky-400">"leakpoint_total"</span>: <span class="text-amber-300">8</span>, <span class="text-sky-400">"pipe_total"</span>: <span class="text-amber-300">150</span>
   }
 }</code></pre>
+        </div>
+      </section>
+
+      <!-- ===== FEATURE CRUD ENDPOINTS ===== -->
+      <div class="mb-6 mt-12">
+        <h3 class="text-lg font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Feature CRUD</h3>
+      </div>
+
+      <section class="endpoint-section mb-12">
+        <p class="text-slate-600 dark:text-slate-300 mb-4">
+          Feature CRUD ใช้จัดการข้อมูลที่วาดจากระบบ DMAMA/Vallaris สำหรับ <code class="text-xs">dma_boundary</code>, <code class="text-xs">flow_meter</code>, และ <code class="text-xs">step_test</code>. MongoDB เป็น source of truth ส่วน PostGIS schema <code class="text-xs">dmama_layer.&lt;shape&gt;</code> เป็น mirror สำหรับตรวจ topology และค้นเชิงพื้นที่
+        </p>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">shape</th><th class="text-left px-4 py-2">geometry</th><th class="text-left px-4 py-2">กฎ topology</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">dma_boundary</td><td class="px-4 py-2">Polygon</td><td class="px-4 py-2">geometry ต้อง valid และห้าม overlap กับ <code class="text-xs">dma_boundary</code> อื่นในสาขาเดียวกัน; <code class="text-xs">dma_id</code> ใช้เฉพาะ shape นี้</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">flow_meter</td><td class="px-4 py-2">Point</td><td class="px-4 py-2">ต้องอยู่ใน coverage ของ <code class="text-xs">dma_boundary</code> ของสาขานั้น</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">step_test</td><td class="px-4 py-2">Polygon</td><td class="px-4 py-2">ต้องเป็น polygon ที่ valid และอยู่ใน coverage ของ <code class="text-xs">dma_boundary</code> ของสาขานั้น</td></tr>
+          </tbody>
+        </table>
+        <div class="mb-4">
+          <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body ที่ใช้ร่วมกัน</h4>
+          <ul class="list-disc pl-5 text-sm text-slate-600 dark:text-slate-300 space-y-1">
+            <li><code class="text-xs">geometry</code>: GeoJSON geometry ตามชนิดของ <code class="text-xs">:shape</code> และใช้พิกัด <code class="text-xs">[lng, lat]</code> (EPSG:4326)</li>
+            <li><code class="text-xs">properties</code>: metadata ของ feature ส่งได้ตาม field งาน เช่น <code class="text-xs">dmaNo</code>, <code class="text-xs">stepNo</code>, <code class="text-xs">remark</code></li>
+            <li><code class="text-xs">dma_id</code>: ส่งเฉพาะ <code class="text-xs">dma_boundary</code>; ค่า <code class="text-xs">0</code> หรือไม่ส่ง หมายถึงให้ backend กำหนด <code class="text-xs">max+1</code></li>
+          </ul>
+        </div>
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg p-4">
+          <p class="text-sm text-amber-800 dark:text-amber-200"><strong>หมายเหตุ:</strong> ค่า <code class="text-xs">:pwaCode</code> ใน URL เป็นสาขาหลักที่ใช้เลือก collection. Server จะตั้ง field ระบบให้เอง เช่น <code class="text-xs">_id</code>, <code class="text-xs">pwaCode</code>, <code class="text-xs">_createdAt</code>, <code class="text-xs">_createdBy</code>, <code class="text-xs">_updatedAt</code>, <code class="text-xs">_updatedBy</code>. สำหรับ endpoint ที่เขียนข้อมูลให้ส่ง <code class="text-xs bg-amber-100 dark:bg-amber-900/40 px-1 rounded">X-User-Id</code> เช่น <code class="text-xs">10090</code> เพื่อ map เป็น user ใน <code class="text-xs">claystone.users</code></p>
+        </div>
+      </section>
+
+      <!-- Feature: Validate -->
+      <section id="ep-feature-validate" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode/validate</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ตรวจ topology แบบ dry-run โดยไม่บันทึก Mongo และไม่ upsert mirror. ถ้า body อ่านได้และ backend พร้อม แม้ geometry ไม่ผ่านกฎก็คืน <code class="text-xs">200</code> พร้อม <code class="text-xs">valid:false</code>; error จาก body/database จะคืน error ตามปกติ</p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (flow_meter)</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Point"</span>, <span class="text-sky-400">"coordinates"</span>: [<span class="text-amber-300">99.000763952422</span>, <span class="text-amber-300">18.79578125261918</span>] },
+  <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"remark"</span>: <span class="text-emerald-400">"postman validate"</span> }
+}</code></pre>
+        </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"data"</span>: {
+    <span class="text-sky-400">"valid"</span>: <span class="text-amber-300">false</span>,
+    <span class="text-sky-400">"violations"</span>: [<span class="text-emerald-400">"point is outside the branch dma_boundary coverage"</span>],
+    <span class="text-sky-400">"warnings"</span>: []
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Feature: Create -->
+      <section id="ep-feature-create" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">สร้าง feature ใหม่: validate topology ก่อน จากนั้น insert ลง MongoDB และ upsert เข้า PostGIS mirror. สำเร็จคืน <code class="text-xs">201</code>; ถ้า topology ไม่ผ่านคืน <code class="text-xs">400</code> พร้อมรายการ <code class="text-xs">violations</code></p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (dma_boundary)</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Polygon"</span>, <span class="text-sky-400">"coordinates"</span>: [[[<span class="text-amber-300">99.01</span>, <span class="text-amber-300">18.80</span>], [<span class="text-amber-300">99.02</span>, <span class="text-amber-300">18.80</span>], [<span class="text-amber-300">99.02</span>, <span class="text-amber-300">18.81</span>], [<span class="text-amber-300">99.01</span>, <span class="text-amber-300">18.81</span>], [<span class="text-amber-300">99.01</span>, <span class="text-amber-300">18.80</span>]]] },
+  <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"dmaNo"</span>: <span class="text-emerald-400">"DMA99"</span>, <span class="text-sky-400">"dmaName"</span>: <span class="text-emerald-400">"DMA postman"</span> },
+  <span class="text-sky-400">"dma_id"</span>: <span class="text-amber-300">0</span>
+}</code></pre>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4 mb-4">
+          <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>flow_meter</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+            <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Point"</span>, <span class="text-sky-400">"coordinates"</span>: [<span class="text-amber-300">99.000763952422</span>, <span class="text-amber-300">18.79578125261918</span>] },
+  <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"remark"</span>: <span class="text-emerald-400">"postman create"</span> }
+}</code></pre>
+          </div>
+          <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>step_test</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+            <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Polygon"</span>, <span class="text-sky-400">"coordinates"</span>: [[[<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>]]] },
+  <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"STEP_ID"</span>: <span class="text-amber-300">1</span>, <span class="text-sky-400">"stepNo"</span>: <span class="text-emerald-400">"ST-01"</span>, <span class="text-sky-400">"stepName"</span>: <span class="text-emerald-400">"ST-01-Big-c แยกแม่เหียะ"</span>, <span class="text-sky-400">"dmaName"</span>: <span class="text-emerald-400">"DMA-35-Big-c แยกแม่เหียะ"</span>, <span class="text-sky-400">"dmaNo"</span>: <span class="text-emerald-400">"DMA-35"</span>, <span class="text-sky-400">"pwaCode"</span>: <span class="text-emerald-400">"5521040"</span>, <span class="text-sky-400">"remark"</span>: <span class="text-emerald-400">""</span> }
+}</code></pre>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4"><code class="text-xs">dma_id</code> = <code class="text-xs">0</code> หรือไม่ส่ง หมายถึง backend กำหนด running number <code class="text-xs">max+1</code> ให้; ถ้าส่งค่าที่ซ้ำกับ <code class="text-xs">dma_boundary</code> เดิมในสาขาเดียวกันจะถูก reject</p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"data"</span>: { <span class="text-sky-400">"id"</span>: <span class="text-emerald-400">"6683..."</span>, <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Feature"</span>, <span class="text-sky-400">"geometry"</span>: { ... }, <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"dmaId"</span>: <span class="text-amber-300">53</span>, <span class="text-sky-400">"pwaCode"</span>: <span class="text-emerald-400">"5521040"</span> } }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Feature: List -->
+      <section id="ep-feature-list" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ดึง feature ทั้งหมดของสาขาและชนิดนั้นจาก MongoDB. ใส่ query <code class="text-xs">bbox=minLng,minLat,maxLng,maxLat</code> เพื่อกรอง feature ที่ตัดกับกรอบแผนที่ได้</p>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/features/dma_boundary/5521040?bbox=98.9,18.7,99.1,18.9">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>GET /api/features/dma_boundary/5521040?bbox=<span class="text-amber-300">98.9,18.7,99.1,18.9</span></code></pre>
+        </div>
+      </section>
+
+      <!-- Feature: Get one -->
+      <section id="ep-feature-get" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode/:id</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ดึง feature รายตัวด้วย Mongo ObjectId; ไม่พบคืน <code class="text-xs">404</code></p>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/features/step_test/5521040/{{step_test_id}}">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>GET /api/features/step_test/5521040/<span class="text-emerald-400">{{step_test_id}}</span></code></pre>
+        </div>
+      </section>
+
+      <!-- Feature: Update -->
+      <section id="ep-feature-update" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">PUT</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode/:id</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">แก้ไข geometry/properties ของ feature เดิม โดย validate topology ใหม่และไม่นับ feature ตัวเองตอนตรวจ overlap. สำเร็จจะ update MongoDB และ upsert mirror; ไม่พบคืน <code class="text-xs">404</code>, topology ไม่ผ่านคืน <code class="text-xs">400</code></p>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Request Body (step_test)</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Polygon"</span>, <span class="text-sky-400">"coordinates"</span>: [[[<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>]]] },
+  <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"STEP_ID"</span>: <span class="text-amber-300">1</span>, <span class="text-sky-400">"stepNo"</span>: <span class="text-emerald-400">"ST-01"</span>, <span class="text-sky-400">"remark"</span>: <span class="text-emerald-400">"แก้ไขแล้ว"</span>, <span class="text-sky-400">"pwaCode"</span>: <span class="text-emerald-400">"5521040"</span> }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Feature: Delete -->
+      <section id="ep-feature-delete" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">DELETE</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode/:id</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ลบ feature จาก MongoDB และลบ row mirror ใน <code class="text-xs">dmama_layer.&lt;shape&gt;</code>; ไม่พบคืน <code class="text-xs">404</code></p>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/features/step_test/5521040/{{step_test_id}}">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>DELETE /api/features/step_test/5521040/<span class="text-emerald-400">{{step_test_id}}</span></code></pre>
+        </div>
+      </section>
+
+      <!-- Feature: Sync -->
+      <section id="ep-feature-sync" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode/sync</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ไม่มี request body. ใช้ backfill/upsert mirror <code class="text-xs">dmama_layer.&lt;shape&gt;</code> จากข้อมูล MongoDB ของสาขานั้น เหมาะสำหรับเรียกหลัง import ข้อมูลเดิมหรือซ่อม mirror ที่ขาด/ไม่ตรง. Endpoint นี้ไม่ใช่การสร้าง feature ใหม่ และไม่ใช่ full purge/reconcile row เก่าที่ไม่มีใน Mongo</p>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/features/step_test/5521040/sync">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>POST /api/features/step_test/5521040/sync</code></pre>
+        </div>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Response</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{ <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>, <span class="text-sky-400">"data"</span>: { <span class="text-sky-400">"synced"</span>: <span class="text-amber-300">42</span> } }</code></pre>
         </div>
       </section>
 
