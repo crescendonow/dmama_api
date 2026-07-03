@@ -18,6 +18,9 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB,
 	app.Get("/docs", func(c *fiber.Ctx) error {
 		return c.SendFile("./template/index.html")
 	})
+	app.Get("/docs/api-monitor", func(c *fiber.Ctx) error {
+		return c.SendFile("./template/api_monitor.html")
+	})
 
 	api := app.Group("/api")
 
@@ -26,6 +29,15 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB,
 
 	// API key authentication for all routes below
 	api.Use(middleware.APIKeyAuth(cfg))
+
+	// API usage monitor is read-only and registered before UsageLogger so dashboard refreshes do
+	// not add self-referential records to auth_logs.dmama_use.
+	if gisPool != nil {
+		monitorH := handler.NewMonitorHandler(gisPool)
+		api.Get("/monitor/usage", monitorH.Usage)
+	} else {
+		api.Get("/monitor/usage", handler.MonitorUnavailable)
+	}
 
 	// Usage/credit logging for every authenticated /api request (health above is excluded).
 	if usageRec != nil {

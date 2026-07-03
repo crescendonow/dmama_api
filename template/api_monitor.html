@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DMAMA API Monitor</title>
+  <link rel="stylesheet" href="/docs/static/css/api_monitor.css?v=20260703">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-block">
+      <span class="brand-mark" aria-hidden="true">DM</span>
+      <div>
+        <h1>API Monitor</h1>
+        <p>DMAMA API usage</p>
+      </div>
+    </div>
+    <nav class="header-actions" aria-label="Page links">
+      <a href="/docs">API Docs</a>
+      <button id="refresh-top" class="icon-button" type="button">Refresh</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-shell">
+    <section class="control-band" aria-label="API monitor controls">
+      <div class="auth-row">
+        <label class="field field-wide" for="monitor-key">
+          <span>X-API-Key</span>
+          <input id="monitor-key" type="password" autocomplete="off" placeholder="Monitor API key">
+        </label>
+        <button id="save-key" class="secondary-button" type="button">Save</button>
+        <button id="clear-key" class="ghost-button" type="button">Clear</button>
+        <div id="load-state" class="load-state" aria-live="polite">Idle</div>
+      </div>
+
+      <form id="filter-form" class="filter-grid">
+        <label class="field" for="preset">
+          <span>Time</span>
+          <select id="preset" name="preset">
+            <option value="1h">1 hour</option>
+            <option value="6h">6 hours</option>
+            <option value="24h" selected>24 hours</option>
+            <option value="7d">7 days</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+
+        <label class="field custom-field" for="from-time" hidden>
+          <span>From</span>
+          <input id="from-time" name="from" type="datetime-local">
+        </label>
+
+        <label class="field custom-field" for="to-time" hidden>
+          <span>To</span>
+          <input id="to-time" name="to" type="datetime-local">
+        </label>
+
+        <label class="field" for="filter-api-key">
+          <span>API key filter</span>
+          <input id="filter-api-key" name="api_key" type="text" autocomplete="off" placeholder="Exact key">
+        </label>
+
+        <label class="field" for="method">
+          <span>Method</span>
+          <select id="method" name="method">
+            <option value="">All</option>
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="PATCH">PATCH</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+        </label>
+
+        <label class="field" for="path">
+          <span>Path</span>
+          <input id="path" name="path" type="search" autocomplete="off" placeholder="/api/dma">
+        </label>
+
+        <label class="field" for="status">
+          <span>Status</span>
+          <input id="status" name="status" type="number" min="100" max="599" placeholder="All">
+        </label>
+
+        <label class="field" for="limit">
+          <span>Limit</span>
+          <input id="limit" name="limit" type="number" min="1" max="500" value="100">
+        </label>
+
+        <div class="filter-actions">
+          <button class="primary-button" type="submit">Apply</button>
+          <button id="reset-filters" class="ghost-button" type="button">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="message" class="message" hidden aria-live="polite"></section>
+
+    <section class="kpi-grid" aria-label="Usage KPIs">
+      <article class="kpi-card">
+        <span>Total calls</span>
+        <strong id="kpi-calls">0</strong>
+        <small id="kpi-window">24 hours</small>
+      </article>
+      <article class="kpi-card">
+        <span>Error rate</span>
+        <strong id="kpi-error-rate">0%</strong>
+        <small id="kpi-errors">0 errors</small>
+      </article>
+      <article class="kpi-card">
+        <span>Avg latency</span>
+        <strong id="kpi-latency">0 ms</strong>
+        <small>weighted by endpoint calls</small>
+      </article>
+      <article class="kpi-card">
+        <span>Response volume</span>
+        <strong id="kpi-volume">0 KB</strong>
+        <small>from top API keys</small>
+      </article>
+    </section>
+
+    <section class="panel status-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Status distribution</h2>
+          <p id="status-caption">No data loaded</p>
+        </div>
+      </div>
+      <div id="status-bars" class="status-bars"></div>
+    </section>
+
+    <section class="table-grid">
+      <article class="panel table-panel table-panel-wide">
+        <div class="panel-header table-header">
+          <div>
+            <h2>Latest requests</h2>
+            <p id="latest-count">0 rows</p>
+          </div>
+          <input data-table-search="latest" type="search" placeholder="Search table">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th><button type="button" data-table="latest" data-sort="started_at">Started</button></th>
+                <th><button type="button" data-table="latest" data-sort="method">Method</button></th>
+                <th><button type="button" data-table="latest" data-sort="path">Path</button></th>
+                <th><button type="button" data-table="latest" data-sort="status">Status</button></th>
+                <th><button type="button" data-table="latest" data-sort="duration_ms">Duration</button></th>
+                <th><button type="button" data-table="latest" data-sort="size_value">Size</button></th>
+                <th><button type="button" data-table="latest" data-sort="api_key">API key</button></th>
+                <th><button type="button" data-table="latest" data-sort="request_id">Request ID</button></th>
+              </tr>
+            </thead>
+            <tbody id="latest-body"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel table-panel table-panel-wide">
+        <div class="panel-header table-header">
+          <div>
+            <h2>Endpoint summary</h2>
+            <p id="endpoint-count">0 rows</p>
+          </div>
+          <input data-table-search="endpoints" type="search" placeholder="Search table">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th><button type="button" data-table="endpoints" data-sort="path">Path</button></th>
+                <th><button type="button" data-table="endpoints" data-sort="method">Method</button></th>
+                <th><button type="button" data-table="endpoints" data-sort="status">Status</button></th>
+                <th><button type="button" data-table="endpoints" data-sort="calls">Calls</button></th>
+                <th><button type="button" data-table="endpoints" data-sort="avg_ms">Avg ms</button></th>
+              </tr>
+            </thead>
+            <tbody id="endpoint-body"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel table-panel">
+        <div class="panel-header table-header">
+          <div>
+            <h2>Top API keys</h2>
+            <p id="api-key-count">0 rows</p>
+          </div>
+          <input data-table-search="apiKeys" type="search" placeholder="Search table">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th><button type="button" data-table="apiKeys" data-sort="api_key">API key</button></th>
+                <th><button type="button" data-table="apiKeys" data-sort="calls">Calls</button></th>
+                <th><button type="button" data-table="apiKeys" data-sort="total_bytes">Volume</button></th>
+                <th><button type="button" data-table="apiKeys" data-sort="avg_ms">Avg ms</button></th>
+              </tr>
+            </thead>
+            <tbody id="api-key-body"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/docs/static/js/api_monitor.js?v=20260703" defer></script>
+</body>
+</html>

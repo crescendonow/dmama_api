@@ -41,10 +41,13 @@
           <span class="text-xs bg-sky-500/30 text-sky-200 px-2 py-0.5 rounded-full font-medium">v2026.04</span>
         </div>
       </div>
-      <button id="theme-toggle" class="p-2 text-white hover:bg-primary-600 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Toggle dark mode">
-        <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-      </button>
+      <div class="flex items-center gap-2">
+        <a href="/docs/api-monitor" class="hidden sm:inline-flex items-center px-3 py-1.5 text-sm font-semibold text-white border border-white/30 rounded-lg hover:bg-primary-600 dark:hover:bg-slate-700 transition-colors">API Monitor</a>
+        <button id="theme-toggle" class="p-2 text-white hover:bg-primary-600 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Toggle dark mode">
+          <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -65,6 +68,7 @@
       <a href="#zone-mapping" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">การแมป Zone/เขต</a>
 
       <a href="#playground" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">Playground / Test Case</a>
+      <a href="/docs/api-monitor" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">API Monitor</a>
       <div class="my-3 border-t border-slate-200 dark:border-slate-700"></div>
 
       <!-- Endpoints -->
