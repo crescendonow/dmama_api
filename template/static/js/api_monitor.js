@@ -2,6 +2,7 @@
   "use strict";
 
   var STORAGE_KEY = "dmama_api_monitor_key";
+  var THEME_STORAGE_KEY = "theme";
   var API_URL = "/api/monitor/usage";
 
   var state = {
@@ -17,6 +18,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     cacheElements();
+    initTheme();
     restoreKey();
     setDefaultCustomRange();
     bindEvents();
@@ -29,6 +31,9 @@
     els.saveKey = document.getElementById("save-key");
     els.clearKey = document.getElementById("clear-key");
     els.refreshTop = document.getElementById("refresh-top");
+    els.themeToggle = document.getElementById("theme-toggle");
+    els.iconSun = document.getElementById("icon-sun");
+    els.iconMoon = document.getElementById("icon-moon");
     els.filterForm = document.getElementById("filter-form");
     els.resetFilters = document.getElementById("reset-filters");
     els.preset = document.getElementById("preset");
@@ -67,6 +72,12 @@
 
     els.refreshTop.addEventListener("click", loadUsage);
 
+    if (els.themeToggle) {
+      els.themeToggle.addEventListener("click", function () {
+        setTheme(!document.documentElement.classList.contains("dark"));
+      });
+    }
+
     els.preset.addEventListener("change", function () {
       toggleCustomFields();
     });
@@ -103,6 +114,41 @@
         renderDashboard();
       });
     });
+  }
+
+  function initTheme() {
+    var saved = readStoredTheme();
+    var prefersDark = false;
+    try {
+      prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    } catch (_err) {
+      prefersDark = false;
+    }
+    setTheme(saved === "dark" || (!saved && prefersDark), false);
+  }
+
+  function setTheme(dark, persist) {
+    document.documentElement.classList.toggle("dark", dark);
+    if (els.iconSun) els.iconSun.classList.toggle("hidden", !dark);
+    if (els.iconMoon) els.iconMoon.classList.toggle("hidden", dark);
+    if (els.themeToggle) els.themeToggle.setAttribute("aria-pressed", dark ? "true" : "false");
+    if (persist !== false) writeStoredTheme(dark ? "dark" : "light");
+  }
+
+  function readStoredTheme() {
+    try {
+      return localStorage.getItem(THEME_STORAGE_KEY);
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function writeStoredTheme(value) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, value);
+    } catch (_err) {
+      // Some hardened browser contexts disable localStorage.
+    }
   }
 
   function restoreKey() {
