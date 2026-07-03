@@ -87,6 +87,11 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 	return prepareDMAStatsResponse(value.(*model.DMAStats), pwaCode, dmaID, column), nil
 }
 
+// GetStatsRegion returns merged usage and population statistics for every DMA in a region.
+func (s *DMAService) GetStatsRegion(ctx context.Context, region int, column string) ([]model.DMAStats, error) {
+	return s.customerRepo.GetStatsRegion(ctx, region, column)
+}
+
 // GetDailyMeterCount counts active meters within a DMA. The column parameter is accepted by the handler for stats payload compatibility but is not used here.
 func (s *DMAService) GetDailyMeterCount(ctx context.Context, pwaCode, dmaID string, region int) (*model.DMADailyMeterCount, error) {
 	return s.meterRepo.CountDailyMetersInDMA(ctx, region, pwaCode, dmaID)
@@ -137,6 +142,17 @@ func ResolveStatsColumn(yearStr, monthStr, column string, now time.Time) (string
 		column = "prswtusg"
 	}
 	if err := repository.ValidateColumn(column); err != nil {
+		return "", err
+	}
+	return column, nil
+}
+
+// ResolveStatsRegionColumn maps stats-region request params to its limited safe column set.
+func ResolveStatsRegionColumn(column string) (string, error) {
+	if column == "" {
+		column = "prswtusg"
+	}
+	if err := repository.ValidateStatsRegionColumn(column); err != nil {
 		return "", err
 	}
 	return column, nil

@@ -98,3 +98,39 @@ func TestPrepareDMAStatsResponseUsesRequestMetadata(t *testing.T) {
 		t.Fatal("prepareDMAStatsResponse changed numeric stats")
 	}
 }
+
+func TestResolveStatsRegionColumnDefaultsToPresentUsage(t *testing.T) {
+	column, err := ResolveStatsRegionColumn("")
+	if err != nil {
+		t.Fatalf("ResolveStatsRegionColumn returned error: %v", err)
+	}
+	if column != "prswtusg" {
+		t.Fatalf("expected prswtusg, got %s", column)
+	}
+}
+
+func TestResolveStatsRegionColumnAllowsOnlyContractColumns(t *testing.T) {
+	allowed := []string{"prswtusg", "lstwtusg1"}
+	for _, input := range allowed {
+		t.Run(input, func(t *testing.T) {
+			column, err := ResolveStatsRegionColumn(input)
+			if err != nil {
+				t.Fatalf("expected %s to be allowed: %v", input, err)
+			}
+			if column != input {
+				t.Fatalf("expected %s, got %s", input, column)
+			}
+		})
+	}
+}
+
+func TestResolveStatsRegionColumnRejectsUnsupportedColumns(t *testing.T) {
+	rejected := []string{"ltwtusg1", "lstwtusg2", "prswtusg;drop table"}
+	for _, input := range rejected {
+		t.Run(input, func(t *testing.T) {
+			if _, err := ResolveStatsRegionColumn(input); err == nil {
+				t.Fatal("expected error")
+			}
+		})
+	}
+}

@@ -175,6 +175,31 @@ func (h *DMAHandler) GetStats(c *fiber.Ctx) error {
 	return c.JSON(model.SuccessResponse(result))
 }
 
+// GetStatsRegion returns merged usage and population statistics for every DMA in a region.
+// GET /api/dma/stats-region?region=9&column=prswtusg
+func (h *DMAHandler) GetStatsRegion(c *fiber.Ctx) error {
+	regionStr := c.Query("region")
+	if regionStr == "" {
+		return c.Status(400).JSON(model.ErrorResponse("region is required"))
+	}
+
+	region, err := strconv.Atoi(regionStr)
+	if err != nil || !repository.ValidRegion(region) {
+		return c.Status(400).JSON(model.ErrorResponse("region must be 1-10"))
+	}
+
+	column, err := service.ResolveStatsRegionColumn(c.Query("column"))
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+	}
+
+	result, err := h.dmaService.GetStatsRegion(c.Context(), region, column)
+	if err != nil {
+		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+	return c.JSON(model.SuccessWithCount(result, len(result)))
+}
+
 // GetDailyMeterCount counts active meters within a DMA. The optional column query param is ignored.
 // GET /api/dma/daily_metercount?pwa_code=5531011&dma_id=1&column=prswtusg
 func (h *DMAHandler) GetDailyMeterCount(c *fiber.Ctx) error {

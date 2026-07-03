@@ -67,3 +67,39 @@ func TestTextPtrDecodesWindows874Text(t *testing.T) {
 		t.Fatalf("expected decoded Thai text, got %q", *result)
 	}
 }
+
+func TestDMAStatsRegionQueryUsesRegionTableAndPrefix(t *testing.T) {
+	query, prefix, err := dmaStatsRegionQuery(9, "prswtusg")
+	if err != nil {
+		t.Fatalf("dmaStatsRegionQuery returned error: %v", err)
+	}
+	if prefix != "5511%" {
+		t.Fatalf("expected region 9 prefix 5511%%, got %s", prefix)
+	}
+	if !strings.Contains(query, "giswebm_stamp.r9_bl_customer") {
+		t.Fatalf("expected region 9 customer table, query was %s", query)
+	}
+	if !strings.Contains(query, "WHERE dma.pwa_code LIKE $1") {
+		t.Fatalf("expected region prefix filter, query was %s", query)
+	}
+}
+
+func TestDMAStatsRegionQueryIncludesGroupedSpatialLeftJoin(t *testing.T) {
+	query, _, err := dmaStatsRegionQuery(1, "lstwtusg1")
+	if err != nil {
+		t.Fatalf("dmaStatsRegionQuery returned error: %v", err)
+	}
+
+	required := []string{
+		"LEFT JOIN giswebm_stamp.r1_bl_customer AS bl",
+		"ST_Intersects(",
+		"GROUP BY dma.pwa_code, dma.dma_id",
+		"ORDER BY dma.pwa_code, dma.dma_id",
+		"SUM(bl.lstwtusg1)",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(query, fragment) {
+			t.Fatalf("expected query to contain %q, query was %s", fragment, query)
+		}
+	}
+}

@@ -37,6 +37,16 @@ func ValidateColumn(col string) error {
 	return nil
 }
 
+// ValidateStatsRegionColumn restricts the stats-region endpoint to its public contract.
+func ValidateStatsRegionColumn(col string) error {
+	switch col {
+	case "prswtusg", "lstwtusg1":
+		return nil
+	default:
+		return fmt.Errorf("invalid stats-region column: %s", col)
+	}
+}
+
 func dmaCustomersQuery(region int) string {
 	tbl := TableName("giswebm_stamp", region, "bl_customer")
 	return fmt.Sprintf(`
@@ -278,6 +288,83 @@ func (r *CustomerRepo) GetStatsInDMA(ctx context.Context, region int, pwaCode, d
 	result.DmaID = dmaID
 	result.Column = column
 	return &result, nil
+}
+
+func dmaStatsRegionQuery(region int, column string) (string, string, error) {
+	prefix, err := ZonePrefix(region)
+	if err != nil {
+		return "", "", err
+	}
+
+	tbl := TableName("giswebm_stamp", region, "bl_customer")
+	query := fmt.Sprintf(`
+		SELECT
+			dma.pwa_code,
+			dma.dma_id,
+			COALESCE(SUM(bl.%s), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype IN ('11','12','13','14','15') THEN bl.%s ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype IN ('21','22','24','25','27') THEN bl.%s ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype IN ('23','26','28','29') THEN bl.%s ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN bl.usetype LIKE '3%%' THEN bl.%s ELSE 0 END), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype LIKE '1%%' AND bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype IN ('21','22','24','25','27') AND bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype IN ('23','26','28','29') AND bl.%s > -1), 0),
+			COALESCE(COUNT(bl.pwa_code) FILTER (WHERE bl.usetype LIKE '3%%' AND bl.%s > -1), 0)
+		FROM pwa_dma.dma_boundary AS dma
+		LEFT JOIN %s AS bl
+			ON bl.pwa_code = dma.pwa_code
+			AND ST_Intersects(
+				dma.wkb_geometry,
+				CASE
+					WHEN ST_SRID(bl.wkb_geometry) = ST_SRID(dma.wkb_geometry) THEN bl.wkb_geometry
+					WHEN ST_SRID(bl.wkb_geometry) = 0 THEN ST_SetSRID(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
+					ELSE ST_Transform(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
+				END
+			)
+		WHERE dma.pwa_code LIKE $1
+		GROUP BY dma.pwa_code, dma.dma_id
+		ORDER BY dma.pwa_code, dma.dma_id`,
+		column, column, column, column, column, column, column, column, column, column, tbl)
+
+	return query, prefix + "%", nil
+}
+
+// GetStatsRegion returns merged usage and population statistics for every DMA in a region.
+func (r *CustomerRepo) GetStatsRegion(ctx context.Context, region int, column string) ([]model.DMAStats, error) {
+	if err := ValidateStatsRegionColumn(column); err != nil {
+		return nil, err
+	}
+
+	query, prefix, err := dmaStatsRegionQuery(region, column)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.pool.Query(ctx, query, prefix)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	stats := make([]model.DMAStats, 0)
+	for rows.Next() {
+		var item model.DMAStats
+		if err := rows.Scan(
+			&item.PwaCode,
+			&item.DmaID,
+			&item.Usage.Total, &item.Usage.House, &item.Usage.Government, &item.Usage.BusinessSmall, &item.Usage.BusinessLarge,
+			&item.Population.Total, &item.Population.House, &item.Population.Government, &item.Population.BusinessSmall, &item.Population.BusinessLarge,
+		); err != nil {
+			return nil, err
+		}
+		item.Column = column
+		stats = append(stats, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return stats, nil
 }
 
 // CountPopulationByDMA counts customers by type within a DMA via direct DB-side join.
