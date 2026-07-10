@@ -10,18 +10,27 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type dmaDB interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
 type DMARepo struct {
-	pool *pgxpool.Pool
+	db dmaDB
 }
 
 func NewDMARepo(pool *pgxpool.Pool) *DMARepo {
-	return &DMARepo{pool: pool}
+	return newDMARepo(pool)
+}
+
+func newDMARepo(db dmaDB) *DMARepo {
+	return &DMARepo{db: db}
 }
 
 // GetAtLeakpoint finds the DMA boundary intersecting a leakpoint coordinate.
 func (r *DMARepo) GetAtLeakpoint(ctx context.Context, lng, lat float64, pwaCode string) (*model.DMABoundary, error) {
 	query := `
-		SELECT pwa_code, dma_id, dma_no
+		SELECT pwa_code, dma_id, dma_no, dma_name
 		FROM pwa_dma.dma_boundary
 		WHERE ST_Intersects(
 			wkb_geometry,
@@ -37,8 +46,8 @@ func (r *DMARepo) GetAtLeakpoint(ctx context.Context, lng, lat float64, pwaCode 
 	query += " LIMIT 1"
 
 	var result model.DMABoundary
-	err := r.pool.QueryRow(ctx, query, args...).Scan(
-		&result.PwaCode, &result.DmaID, &result.DmaNo,
+	err := r.db.QueryRow(ctx, query, args...).Scan(
+		&result.PwaCode, &result.DmaID, &result.DmaNo, &result.DmaName,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -53,13 +62,13 @@ func (r *DMARepo) GetAtLeakpoint(ctx context.Context, lng, lat float64, pwaCode 
 func (r *DMARepo) GetBoundary(ctx context.Context, pwaCode, dmaID string, format model.GeomFormat) (*model.DMABoundary, error) {
 	geomExpr := model.SQLGeomExpr("wkb_geometry", format)
 	query := fmt.Sprintf(`
-		SELECT pwa_code, dma_id, dma_no, %s, ST_AsText(wkb_geometry) AS wkb_raw
+		SELECT pwa_code, dma_id, dma_no, dma_name, %s, ST_AsText(wkb_geometry) AS wkb_raw
 		FROM pwa_dma.dma_boundary
 		WHERE pwa_code = $1 AND dma_id = $2`, geomExpr)
 
 	var result model.DMABoundary
-	err := r.pool.QueryRow(ctx, query, pwaCode, dmaID).Scan(
-		&result.PwaCode, &result.DmaID, &result.DmaNo, &result.Geometry, &result.WkbGeometry,
+	err := r.db.QueryRow(ctx, query, pwaCode, dmaID).Scan(
+		&result.PwaCode, &result.DmaID, &result.DmaNo, &result.DmaName, &result.Geometry, &result.WkbGeometry,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -78,7 +87,7 @@ func (r *DMARepo) GetBoundaryRaw(ctx context.Context, pwaCode, dmaID string) (st
 		WHERE pwa_code = $1 AND dma_id = $2`
 
 	var wkt string
-	err := r.pool.QueryRow(ctx, query, pwaCode, dmaID).Scan(&wkt)
+	err := r.db.QueryRow(ctx, query, pwaCode, dmaID).Scan(&wkt)
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +125,7 @@ func (r *DMARepo) GetMapData(ctx context.Context, format model.GeomFormat, pwaCo
 		query += fmt.Sprintf(" concat(pwa_code, '-', dma_id) IN (%s)", joinStrings(placeholders, ","))
 	}
 
-	rows, err := r.pool.Query(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +155,7 @@ func (r *DMARepo) GetUsageV2(ctx context.Context, region int, pwaCode, dmaNo str
 		GROUP BY dv.pwa_code, dv.dma_id, dv.dma_no`, tbl)
 
 	var result model.DMAUsageV2
-	err := r.pool.QueryRow(ctx, query, pwaCode, dmaNo).Scan(
+	err := r.db.QueryRow(ctx, query, pwaCode, dmaNo).Scan(
 		&result.PwaCode, &result.DmaID, &result.DmaNo, &result.Prswtusg,
 	)
 	if err != nil {

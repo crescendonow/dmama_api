@@ -572,6 +572,20 @@ res = requests.get(
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">Filter by office code</td></tr>
           </tbody>
         </table>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4"><code class="text-xs">dma_name</code> เป็น <code class="text-xs">string</code> หรือ <code class="text-xs">null</code> ตามค่าในฐานข้อมูล</p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"data"</span>: {
+    <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5531011"</span>,
+    <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"1"</span>,
+    <span class="text-sky-400">"dma_no"</span>: <span class="text-emerald-400">"001"</span>,
+    <span class="text-sky-400">"dma_name"</span>: <span class="text-emerald-400">"DMA Zone One"</span>
+  }
+}</code></pre>
+        </div>
       </section>
 
       <!-- EP3: DMA Boundary -->
@@ -590,6 +604,7 @@ res = requests.get(
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">format</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2"><code class="text-xs">geojson</code> (default) หรือ <code class="text-xs">wkt</code></td></tr>
           </tbody>
         </table>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4"><code class="text-xs">dma_name</code> เป็น <code class="text-xs">string</code> หรือ <code class="text-xs">null</code> ตามค่าในฐานข้อมูล</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
@@ -599,6 +614,7 @@ res = requests.get(
     <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5531011"</span>,
     <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"1"</span>,
     <span class="text-sky-400">"dma_no"</span>: <span class="text-emerald-400">"001"</span>,
+    <span class="text-sky-400">"dma_name"</span>: <span class="text-emerald-400">"DMA Zone One"</span>,
     <span class="text-sky-400">"geometry"</span>: <span class="text-emerald-400">"{...}"</span>
   }
 }</code></pre>

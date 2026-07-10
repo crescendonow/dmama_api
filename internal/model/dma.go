@@ -5,6 +5,7 @@ type DMABoundary struct {
 	PwaCode     string  `json:"pwa_code"`
 	DmaID       string  `json:"dma_id"`
 	DmaNo       *string `json:"dma_no,omitempty"`
+	DmaName     *string `json:"dma_name"`
 	Geometry    *string `json:"geometry,omitempty"`
 	WkbGeometry *string `json:"-"` // raw geometry for spatial queries, not exposed in JSON
 }
