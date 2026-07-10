@@ -3,7 +3,7 @@
 
   var STORAGE_KEY = "dmama_api_monitor_key";
   var THEME_STORAGE_KEY = "theme";
-  var API_URL = "/api/monitor/usage";
+  var API_URL = "../api/monitor/usage";
 
   var state = {
     data: emptyData(),

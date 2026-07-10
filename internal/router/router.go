@@ -1,6 +1,10 @@
 package router
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	"dmama_api/internal/config"
 	"dmama_api/internal/handler"
 	"dmama_api/internal/middleware"
@@ -13,14 +17,26 @@ import (
 
 func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB, usersDB *mongo.Database, usageRec *repository.UsageRecorder, featureReady bool, cfg *config.Config) {
 	// API documentation
-	app.Static("/template", "./template")
-	app.Static("/docs/static", "./template/static")
+	templateDir := resolveTemplateDir()
+	sendDocsIndex := func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(templateDir, "index.html"))
+	}
+	sendAPIMonitor := func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(templateDir, "api_monitor.html"))
+	}
+
+	app.Static("/template", templateDir)
+	app.Static("/docs/static", filepath.Join(templateDir, "static"))
 	app.Get("/docs", func(c *fiber.Ctx) error {
-		return c.SendFile("./template/index.html")
+		if strings.HasSuffix(c.Path(), "/") {
+			return sendDocsIndex(c)
+		}
+		return c.Redirect("docs/", fiber.StatusMovedPermanently)
 	})
-	app.Get("/docs/api-monitor", func(c *fiber.Ctx) error {
-		return c.SendFile("./template/api_monitor.html")
-	})
+	app.Get("/docs/", sendDocsIndex)
+	app.Get("/docs/index.html", sendDocsIndex)
+	app.Get("/docs/api-monitor", sendAPIMonitor)
+	app.Get("/docs/api_monitor.html", sendAPIMonitor)
 
 	api := app.Group("/api")
 
@@ -98,4 +114,46 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB,
 		// instead of Fiber's misleading "Cannot POST" 404.
 		api.All("/features/*", handler.FeatureUnavailable)
 	}
+}
+func resolveTemplateDir() string {
+	if dir, ok := findTemplateDirFromWorkingDir(); ok {
+		return dir
+	}
+	if exe, err := os.Executable(); err == nil {
+		if dir, ok := findTemplateDir(filepath.Dir(exe)); ok {
+			return dir
+		}
+	}
+	return "template"
+}
+
+func findTemplateDirFromWorkingDir() (string, bool) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", false
+	}
+	return findTemplateDir(wd)
+}
+
+func findTemplateDir(start string) (string, bool) {
+	dir, err := filepath.Abs(start)
+	if err != nil {
+		return "", false
+	}
+	for {
+		candidate := filepath.Join(dir, "template")
+		if regularFile(filepath.Join(candidate, "index.html")) && regularFile(filepath.Join(candidate, "api_monitor.html")) {
+			return candidate, true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", false
+		}
+		dir = parent
+	}
+}
+
+func regularFile(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }

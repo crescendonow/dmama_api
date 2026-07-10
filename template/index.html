@@ -38,11 +38,11 @@
         <div class="flex items-center gap-2">
           <svg class="w-7 h-7 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
           <h1 class="text-lg font-bold text-white">DMAMA API</h1>
-          <span class="text-xs bg-sky-500/30 text-sky-200 px-2 py-0.5 rounded-full font-medium">v2026.04</span>
+          <span class="hidden sm:inline-flex text-xs bg-sky-500/30 text-sky-200 px-2 py-0.5 rounded-full font-medium">v2026.04</span>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <a href="/docs/api-monitor" class="hidden sm:inline-flex items-center px-3 py-1.5 text-sm font-semibold text-white border border-white/30 rounded-lg hover:bg-primary-600 dark:hover:bg-slate-700 transition-colors">API Monitor</a>
+        <a href="./api_monitor.html" class="inline-flex shrink-0 items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white border border-white/30 rounded-lg hover:bg-primary-600 dark:hover:bg-slate-700 transition-colors">API Monitor</a>
         <button id="theme-toggle" class="p-2 text-white hover:bg-primary-600 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Toggle dark mode">
           <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
@@ -68,7 +68,7 @@
       <a href="#zone-mapping" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">การแมป Zone/เขต</a>
 
       <a href="#playground" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">Playground / Test Case</a>
-      <a href="/docs/api-monitor" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">API Monitor</a>
+      <a href="./api_monitor.html" class="nav-link block px-6 py-2 text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">API Monitor</a>
       <div class="my-3 border-t border-slate-200 dark:border-slate-700"></div>
 
       <!-- Endpoints -->
@@ -118,6 +118,9 @@
           </a>
           <a href="#ep-dma-stats" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ปริมาณการใช้น้ำและผู้ใช้น้ำใน DMA
+          </a>
+          <a href="#ep-dma-stats-region" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> สถิติรายเขต
           </a>
           <a href="#ep-dma-daily-metercount" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> จำนวนมาตรวัดน้ำรายวันใน DMA
@@ -296,7 +299,9 @@ res = requests.get(
         </div>
         <div class="mt-4 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700/50 rounded-lg p-4 space-y-2">
           <p class="text-sm text-sky-800 dark:text-sky-200"><strong>X-User-Id:</strong> สำหรับ endpoint ที่เขียนข้อมูล (Feature CRUD) แนบ header <code class="text-xs bg-sky-100 dark:bg-sky-900/40 px-1 rounded">X-User-Id</code> เช่น <code class="text-xs">10090</code> ระบบจะค้น <code class="text-xs">claystone.users</code> ด้วย <code class="text-xs">10090@pwa.co.th</code> เพื่อบันทึก <code class="text-xs">_createdBy</code>/<code class="text-xs">_updatedBy</code></p>
-          <p class="text-sm text-sky-800 dark:text-sky-200"><strong>Usage logging:</strong> ทุก request ภายใต้ <code class="text-xs bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/api</code> (ยกเว้น <code class="text-xs">/health</code>) จะถูกบันทึกปริมาณข้อมูล (KB/MB/GB), ระยะเวลา และช่วงเวลาลง <code class="text-xs">auth_logs.dmama_use</code> โดยอ้างอิงจาก API key ที่เรียก</p>
+          <p class="text-sm text-sky-800 dark:text-sky-200"><strong>Usage logging:</strong> บันทึกเฉพาะ request ใต้ <code class="text-xs bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/api</code> ที่ผ่าน <code class="text-xs">X-API-Key</code> แล้ว โดยไม่รวม <code class="text-xs">/api/health</code> และ request ที่ auth ไม่ผ่าน</p>
+          <p class="text-sm text-sky-800 dark:text-sky-200">เมื่อ <code class="text-xs">GISDATA_URL</code> และ schema พร้อม ระบบจะเขียน log แบบ async ลง <code class="text-xs">auth_logs.dmama_use</code>; การเขียน log ล้มเหลวจะไม่ทำให้ request หลัก fail</p>
+          <p class="text-sm text-sky-800 dark:text-sky-200">Fields สำคัญ: <code class="text-xs">api_key</code>, <code class="text-xs">method</code>, <code class="text-xs">path</code>, <code class="text-xs">status</code>, <code class="text-xs">size_bytes</code>, <code class="text-xs">size_value</code>, <code class="text-xs">size_unit</code>, <code class="text-xs">duration_ms</code>, <code class="text-xs">started_at</code>, <code class="text-xs">ended_at</code>, <code class="text-xs">request_id</code></p>
         </div>
       </section>
 
@@ -680,6 +685,61 @@ res = requests.get(
         </div>
       </section>
 
+      <!-- EP19: DMA Stats Region -->
+      <section id="ep-dma-stats-region" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/stats-region</code>
+        </div>
+        <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
+          ใช้สำหรับดึงสถิติการใช้น้ำและจำนวนผู้ใช้น้ำของทุก DMA ในเขตเดียว เหมาะกับงาน aggregate รายเขตแทนการเรียก <code class="text-xs">/api/dma/stats</code> ซ้ำหลายครั้ง
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">คืนข้อมูลเป็น list โดยแต่ละรายการใช้ shape เดียวกับ <code class="text-xs">/api/dma/stats</code>: <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, <code class="text-xs">column</code>, <code class="text-xs">usage</code>, และ <code class="text-xs">population</code>.</p>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/dma/stats-region?region=9&column=prswtusg">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>GET /api/dma/stats-region?region=<span class="text-amber-300">9</span>&amp;column=<span class="text-emerald-400">prswtusg</span></code></pre>
+        </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">เขต <code class="text-xs">1..10</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">column</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">default <code class="text-xs">prswtusg</code>; รับเฉพาะ <code class="text-xs">prswtusg</code> หรือ <code class="text-xs">lstwtusg1</code></td></tr>
+          </tbody>
+        </table>
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
+          Endpoint นี้ไม่รับ <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, <code class="text-xs">year</code>, หรือ <code class="text-xs">month</code>; ต้องส่ง <code class="text-xs">region</code> เพื่อดึงทุก DMA ในเขตนั้น
+        </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"data"</span>: [
+    {
+      <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5511013"</span>,
+      <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"6"</span>,
+      <span class="text-sky-400">"column"</span>: <span class="text-emerald-400">"prswtusg"</span>,
+      <span class="text-sky-400">"usage"</span>: {
+        <span class="text-sky-400">"total"</span>: <span class="text-amber-300">37260</span>,
+        <span class="text-sky-400">"house"</span>: <span class="text-amber-300">27713</span>,
+        <span class="text-sky-400">"government"</span>: <span class="text-amber-300">1247</span>,
+        <span class="text-sky-400">"business_small"</span>: <span class="text-amber-300">6099</span>,
+        <span class="text-sky-400">"business_large"</span>: <span class="text-amber-300">1256</span>
+      },
+      <span class="text-sky-400">"population"</span>: {
+        <span class="text-sky-400">"total"</span>: <span class="text-amber-300">2484</span>,
+        <span class="text-sky-400">"house"</span>: <span class="text-amber-300">2127</span>,
+        <span class="text-sky-400">"government"</span>: <span class="text-amber-300">11</span>,
+        <span class="text-sky-400">"business_small"</span>: <span class="text-amber-300">298</span>,
+        <span class="text-sky-400">"business_large"</span>: <span class="text-amber-300">48</span>
+      }
+    }
+  ],
+  <span class="text-sky-400">"count"</span>: <span class="text-amber-300">1</span>
+}</code></pre>
+        </div>
+      </section>
       <!-- EP18: DMA Daily Meter Count -->
       <section id="ep-dma-daily-metercount" class="endpoint-section mb-12">
         <div class="flex items-center gap-3 mb-3">

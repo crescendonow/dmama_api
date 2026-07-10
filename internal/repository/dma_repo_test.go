@@ -9,6 +9,7 @@ import (
 	"dmama_api/internal/model"
 
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/text/encoding/charmap"
 )
 
 type fakeDMADB struct {
@@ -101,5 +102,67 @@ func TestDMARepoGetAtLeakpointPreservesNullDMAName(t *testing.T) {
 	query := strings.Join(strings.Fields(db.query), " ")
 	if !strings.Contains(query, "SELECT pwa_code, dma_id, dma_no, dma_name") {
 		t.Fatalf("expected GetAtLeakpoint to select dma_name, query was %s", query)
+	}
+}
+
+func TestDMARepoGetBoundaryDecodesWindows874DMAName(t *testing.T) {
+	const utf8Name = "DMA01 ประปาหนองแซง จ.ส. สระบุรี บ้านกลาง"
+	encoded, err := charmap.Windows874.NewEncoder().String(utf8Name)
+	if err != nil {
+		t.Fatalf("failed to encode fixture: %v", err)
+	}
+	dmaNo := "DMA-001"
+	geometry := `{"type":"Polygon","coordinates":[]}`
+	wkbGeometry := "POLYGON EMPTY"
+	db := &fakeDMADB{
+		row: fakeDMARow{scan: func(dest ...any) error {
+			*dest[0].(*string) = "5531011"
+			*dest[1].(*string) = "1"
+			*dest[2].(**string) = &dmaNo
+			*dest[3].(**string) = &encoded
+			*dest[4].(**string) = &geometry
+			*dest[5].(**string) = &wkbGeometry
+			return nil
+		}},
+	}
+
+	result, err := newDMARepo(db).GetBoundary(context.Background(), "5531011", "1", model.FormatGeoJSON)
+	if err != nil {
+		t.Fatalf("GetBoundary returned error: %v", err)
+	}
+	if result == nil || result.DmaName == nil {
+		t.Fatalf("expected a decoded dma_name, got %#v", result)
+	}
+	if *result.DmaName != utf8Name {
+		t.Fatalf("expected decoded dma_name %q, got %q", utf8Name, *result.DmaName)
+	}
+}
+
+func TestDMARepoGetAtLeakpointDecodesWindows874DMAName(t *testing.T) {
+	const utf8Name = "DMA01 ประปาหนองแซง จ.ส. สระบุรี บ้านกลาง"
+	encoded, err := charmap.Windows874.NewEncoder().String(utf8Name)
+	if err != nil {
+		t.Fatalf("failed to encode fixture: %v", err)
+	}
+	dmaNo := "DMA-001"
+	db := &fakeDMADB{
+		row: fakeDMARow{scan: func(dest ...any) error {
+			*dest[0].(*string) = "5531011"
+			*dest[1].(*string) = "1"
+			*dest[2].(**string) = &dmaNo
+			*dest[3].(**string) = &encoded
+			return nil
+		}},
+	}
+
+	result, err := newDMARepo(db).GetAtLeakpoint(context.Background(), 101.6893, 13.9849, "5531011")
+	if err != nil {
+		t.Fatalf("GetAtLeakpoint returned error: %v", err)
+	}
+	if result == nil || result.DmaName == nil {
+		t.Fatalf("expected a decoded dma_name, got %#v", result)
+	}
+	if *result.DmaName != utf8Name {
+		t.Fatalf("expected decoded dma_name %q, got %q", utf8Name, *result.DmaName)
 	}
 }

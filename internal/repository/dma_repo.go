@@ -55,6 +55,7 @@ func (r *DMARepo) GetAtLeakpoint(ctx context.Context, lng, lat float64, pwaCode 
 		}
 		return nil, err
 	}
+	result.DmaName = decodeDBTextPtr(result.DmaName)
 	return &result, nil
 }
 
@@ -76,6 +77,7 @@ func (r *DMARepo) GetBoundary(ctx context.Context, pwaCode, dmaID string, format
 		}
 		return nil, err
 	}
+	result.DmaName = decodeDBTextPtr(result.DmaName)
 	return &result, nil
 }
 
