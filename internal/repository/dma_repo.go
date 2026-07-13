@@ -100,7 +100,7 @@ func (r *DMARepo) GetBoundaryRaw(ctx context.Context, pwaCode, dmaID string) (st
 func (r *DMARepo) GetMapData(ctx context.Context, format model.GeomFormat, pwaCode *string, ids []string) ([]model.DMAMapItem, error) {
 	geomExpr := model.SQLGeomExpr("wkb_geometry", format)
 	query := fmt.Sprintf(`
-		SELECT concat(pwa_code, '-', dma_id) AS id, pwa_code, dma_id, dma_no AS name, %s
+		SELECT concat(pwa_code, '-', dma_id) AS id, pwa_code, dma_id, dma_no, dma_name, %s
 		FROM pwa_dma.dma_boundary`, geomExpr)
 
 	var args []interface{}
@@ -136,9 +136,10 @@ func (r *DMARepo) GetMapData(ctx context.Context, format model.GeomFormat, pwaCo
 	var items []model.DMAMapItem
 	for rows.Next() {
 		var item model.DMAMapItem
-		if err := rows.Scan(&item.ID, &item.PwaCode, &item.DmaID, &item.Name, &item.Geometry); err != nil {
+		if err := rows.Scan(&item.ID, &item.PwaCode, &item.DmaID, &item.DmaNo, &item.DmaName, &item.Geometry); err != nil {
 			return nil, err
 		}
+		item.DmaName = decodeDBTextPtr(item.DmaName)
 		items = append(items, item)
 	}
 	return items, nil

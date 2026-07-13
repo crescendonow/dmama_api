@@ -15,7 +15,8 @@ type DMAMapItem struct {
 	ID       string  `json:"id"`
 	PwaCode  string  `json:"pwa_code"`
 	DmaID    string  `json:"dma_id"`
-	Name     *string `json:"name,omitempty"`
+	DmaNo    *string `json:"dma_no,omitempty"`
+	DmaName  *string `json:"dma_name"`
 	Geometry *string `json:"geometry,omitempty"`
 }
 

@@ -43,3 +43,53 @@ func TestDMABoundaryResponseIncludesNullDMAName(t *testing.T) {
 		t.Fatalf("expected dma_name to be null, got %#v", dmaName)
 	}
 }
+
+func TestDMAMapItemResponseUsesDMAFields(t *testing.T) {
+	dmaNo := "DMA_01"
+	dmaName := "DMA Zone One"
+	encoded, err := json.Marshal(SuccessResponse(DMAMapItem{
+		ID:      "5531011-1",
+		DmaNo:   &dmaNo,
+		DmaName: &dmaName,
+	}))
+	if err != nil {
+		t.Fatalf("json.Marshal returned error: %v", err)
+	}
+
+	var response struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal(encoded, &response); err != nil {
+		t.Fatalf("json.Unmarshal returned error: %v", err)
+	}
+	if got := response.Data["dma_no"]; got != dmaNo {
+		t.Fatalf("expected dma_no %q, got %#v", dmaNo, got)
+	}
+	if got := response.Data["dma_name"]; got != dmaName {
+		t.Fatalf("expected dma_name %q, got %#v", dmaName, got)
+	}
+	if _, exists := response.Data["name"]; exists {
+		t.Fatal("expected legacy name key to be absent")
+	}
+}
+
+func TestDMAMapItemResponseIncludesNullDMAName(t *testing.T) {
+	encoded, err := json.Marshal(SuccessResponse(DMAMapItem{}))
+	if err != nil {
+		t.Fatalf("json.Marshal returned error: %v", err)
+	}
+
+	var response struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal(encoded, &response); err != nil {
+		t.Fatalf("json.Unmarshal returned error: %v", err)
+	}
+	dmaName, exists := response.Data["dma_name"]
+	if !exists {
+		t.Fatal("expected dma_name key to be present")
+	}
+	if dmaName != nil {
+		t.Fatalf("expected dma_name to be null, got %#v", dmaName)
+	}
+}
