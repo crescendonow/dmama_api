@@ -1175,7 +1175,7 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode</code>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">สร้าง feature ใหม่: validate topology ก่อน จากนั้น insert ลง MongoDB และ upsert เข้า PostGIS mirror. สำเร็จคืน <code class="text-xs">201</code>; ถ้า topology ไม่ผ่านคืน <code class="text-xs">400</code> พร้อมรายการ <code class="text-xs">violations</code></p>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">สร้าง feature ใหม่: validate topology ก่อน จากนั้น insert ลง MongoDB และ upsert เข้า PostGIS mirror. <code class="text-xs">dma_boundary</code> และ <code class="text-xs">flow_meter</code> รับ Feature เดียวเหมือนเดิม ส่วน <code class="text-xs">step_test</code> รับ GeoJSON <code class="text-xs">FeatureCollection</code>. สำเร็จคืน <code class="text-xs">201</code>; ถ้า topology ไม่ผ่านคืน <code class="text-xs">400</code> พร้อมรายการ <code class="text-xs">violations</code></p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (dma_boundary)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
@@ -1194,15 +1194,29 @@ res = requests.get(
 }</code></pre>
           </div>
           <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>step_test</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>step_test (FeatureCollection)</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
             <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
-  <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Polygon"</span>, <span class="text-sky-400">"coordinates"</span>: [[[<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>]]] },
-  <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"STEP_ID"</span>: <span class="text-amber-300">1</span>, <span class="text-sky-400">"stepNo"</span>: <span class="text-emerald-400">"ST-01"</span>, <span class="text-sky-400">"stepName"</span>: <span class="text-emerald-400">"ST-01-Big-c แยกแม่เหียะ"</span>, <span class="text-sky-400">"dmaName"</span>: <span class="text-emerald-400">"DMA-35-Big-c แยกแม่เหียะ"</span>, <span class="text-sky-400">"dmaNo"</span>: <span class="text-emerald-400">"DMA-35"</span>, <span class="text-sky-400">"pwaCode"</span>: <span class="text-emerald-400">"5521040"</span>, <span class="text-sky-400">"remark"</span>: <span class="text-emerald-400">""</span> }
+  <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"FeatureCollection"</span>,
+  <span class="text-sky-400">"features"</span>: [
+    {
+      <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Feature"</span>,
+      <span class="text-sky-400">"id"</span>: <span class="text-emerald-400">"POL-001"</span>,
+      <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Polygon"</span>, <span class="text-sky-400">"coordinates"</span>: [[[<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98496</span>, <span class="text-amber-300">18.76562</span>]]] },
+      <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"_id"</span>: <span class="text-emerald-400">"POL-001"</span>, <span class="text-sky-400">"stepNo"</span>: <span class="text-emerald-400">"ST-01"</span> }
+    },
+    {
+      <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Feature"</span>,
+      <span class="text-sky-400">"id"</span>: <span class="text-emerald-400">"POL-002"</span>,
+      <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Polygon"</span>, <span class="text-sky-400">"coordinates"</span>: [[[<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98544</span>, <span class="text-amber-300">18.76562</span>], [<span class="text-amber-300">98.98544</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76590</span>], [<span class="text-amber-300">98.98520</span>, <span class="text-amber-300">18.76562</span>]]] },
+      <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"_id"</span>: <span class="text-emerald-400">"POL-002"</span>, <span class="text-sky-400">"stepNo"</span>: <span class="text-emerald-400">"ST-02"</span> }
+    }
+  ]
 }</code></pre>
           </div>
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4"><code class="text-xs">dma_id</code> = <code class="text-xs">0</code> หรือไม่ส่ง หมายถึง backend กำหนด running number <code class="text-xs">max+1</code> ให้; ถ้าส่งค่าที่ซ้ำกับ <code class="text-xs">dma_boundary</code> เดิมในสาขาเดียวกันจะถูก reject</p>
-        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2"><code class="text-xs">dma_id</code> = <code class="text-xs">0</code> หรือไม่ส่ง หมายถึง backend กำหนด running number <code class="text-xs">max+1</code> ให้; ถ้าส่งค่าที่ซ้ำกับ <code class="text-xs">dma_boundary</code> เดิมในสาขาเดียวกันจะถูก reject</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">สำหรับ <code class="text-xs">step_test</code> ค่า <code class="text-xs">id</code> และ <code class="text-xs">properties._id</code> ที่ client ส่งมาไม่ถูกใช้เป็นรหัสจัดเก็บ; backend สร้าง MongoDB ObjectID และ server-managed fields ใหม่ให้แต่ละ polygon</p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response (dma_boundary / flow_meter)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
@@ -1210,6 +1224,22 @@ res = requests.get(
   <span class="text-sky-400">"data"</span>: { <span class="text-sky-400">"id"</span>: <span class="text-emerald-400">"6683..."</span>, <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Feature"</span>, <span class="text-sky-400">"geometry"</span>: { ... }, <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"dmaId"</span>: <span class="text-amber-300">53</span>, <span class="text-sky-400">"pwaCode"</span>: <span class="text-emerald-400">"5521040"</span> } }
 }</code></pre>
         </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mt-4 mb-2">Response (step_test)</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"count"</span>: <span class="text-amber-300">2</span>,
+  <span class="text-sky-400">"data"</span>: {
+    <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"FeatureCollection"</span>,
+    <span class="text-sky-400">"features"</span>: [
+      { <span class="text-sky-400">"id"</span>: <span class="text-emerald-400">"server-object-id-1"</span>, <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Feature"</span>, <span class="text-sky-400">"geometry"</span>: { ... }, <span class="text-sky-400">"properties"</span>: { ... } },
+      { <span class="text-sky-400">"id"</span>: <span class="text-emerald-400">"server-object-id-2"</span>, <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Feature"</span>, <span class="text-sky-400">"geometry"</span>: { ... }, <span class="text-sky-400">"properties"</span>: { ... } }
+    ]
+  }
+}</code></pre>
+        </div>
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">ระบบประมวลผล <code class="text-xs">features</code> ตามลำดับและหยุดที่รายการแรกที่ parse, type, topology หรือ persistence ไม่ผ่าน โดย error ระบุ index แบบเริ่มจาก 0 รายการก่อนหน้าที่บันทึกสำเร็จแล้วจะไม่ rollback เนื่องจาก MongoDB และ PostGIS mirror ไม่มี transaction ร่วมกัน หาก MongoDB insert สำเร็จแต่ PostGIS mirror ล้มเหลว รายการที่ error เองอาจค้างอยู่เฉพาะใน MongoDB และการ retry อาจสร้าง ObjectID ใหม่เพิ่ม</div>
       </section>
 
       <!-- Feature: List -->
