@@ -27,8 +27,8 @@ func TestValidateStepTestFeatureCollectionReportsIndexedOverlap(t *testing.T) {
 	body := `{
 		"type":"FeatureCollection",
 		"features":[
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"first"}},
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"second"}}
+			{"type":"Feature","id":"first","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"first"}},
+			{"type":"Feature","id":"second","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"second"}}
 		]
 	}`
 	req := httptest.NewRequest("POST", "/api/features/step_test/5541022/validate", strings.NewReader(body))

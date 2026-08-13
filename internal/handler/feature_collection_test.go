@@ -105,6 +105,14 @@ func TestCreateStepTestFeatureCollectionRejectsInvalidEnvelopeBeforeCreate(t *te
 			name: "empty features",
 			body: `{"type":"FeatureCollection","features":[]}`,
 		},
+		{
+			name: "missing feature id",
+			body: `{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"stepName":"legacy"}}]}`,
+		},
+		{
+			name: "empty feature id",
+			body: `{"type":"FeatureCollection","features":[{"type":"Feature","id":"","geometry":{"type":"Polygon","coordinates":[]},"properties":{"stepName":"legacy"}}]}`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -153,9 +161,9 @@ func TestCreateStepTestFeatureCollectionStopsAtTopologyFailureAndReportsIndex(t 
 	body := `{
 		"type":"FeatureCollection",
 		"features":[
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"first"}},
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"second"}},
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"third"}}
+			{"type":"Feature","id":"first","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"first"}},
+			{"type":"Feature","id":"second","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"second"}},
+			{"type":"Feature","id":"third","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"third"}}
 		]
 	}`
 	req := httptest.NewRequest("POST", "/api/features/step_test/5521040", strings.NewReader(body))
@@ -192,9 +200,9 @@ func TestCreateStepTestFeatureCollectionParsesMembersInOrderAndReportsMalformedI
 	body := `{
 		"type":"FeatureCollection",
 		"features":[
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"first"}},
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":"not-an-object"},
-			{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"third"}}
+			{"type":"Feature","id":"first","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"first"}},
+			{"type":"Feature","id":"second","geometry":{"type":"Polygon","coordinates":[]},"properties":"not-an-object"},
+			{"type":"Feature","id":"third","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"third"}}
 		]
 	}`
 	req := httptest.NewRequest("POST", "/api/features/step_test/5521040", strings.NewReader(body))
