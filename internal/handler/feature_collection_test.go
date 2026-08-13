@@ -16,6 +16,7 @@ import (
 func TestCreateStepTestFeatureCollectionCreatesEveryFeatureInOrder(t *testing.T) {
 	app := fiber.New()
 	creator := &recordingFeatureCreator{}
+
 	h := &FeatureHandler{
 		creator:   creator,
 		validator: &recordingFeatureValidator{collectionResult: &model.ValidationResult{Valid: true}},
@@ -283,4 +284,54 @@ func equalStrings(got, want []string) bool {
 		}
 	}
 	return true
+}
+
+func TestCreateDmaBoundaryFeatureCollectionCreatesEveryFeatureInOrder(t *testing.T) {
+	app := fiber.New()
+	creator := &recordingFeatureCreator{}
+	h := &FeatureHandler{creator: creator, validator: &recordingFeatureValidator{collectionResult: &model.ValidationResult{Valid: true}}}
+	app.Post("/api/features/:shape/:pwaCode", h.Create)
+	body := `{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"boundary-one"}},{"type":"Feature","geometry":{"type":"Polygon","coordinates":[]},"properties":{"name":"boundary-two"}}]}`
+	req := httptest.NewRequest("POST", "/api/features/dma_boundary/5521040", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test returned error: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusCreated {
+		t.Fatalf("expected 201, got %d", resp.StatusCode)
+	}
+	if got, want := creator.names, []string{"boundary-one", "boundary-two"}; !equalStrings(got, want) {
+		t.Fatalf("create order = %v, want %v", got, want)
+	}
+	var response struct {
+		Count int                     `json:"count"`
+		Data  model.FeatureCollection `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.Count != 2 || response.Data.Type != "FeatureCollection" || len(response.Data.Features) != 2 {
+		t.Fatalf("response = %#v, want a two-feature collection", response)
+	}
+}
+
+func TestCreateFlowMeterFeatureCollectionCreatesEveryFeatureInOrder(t *testing.T) {
+	app := fiber.New()
+	creator := &recordingFeatureCreator{}
+	h := &FeatureHandler{creator: creator, validator: &recordingFeatureValidator{collectionResult: &model.ValidationResult{Valid: true}}}
+	app.Post("/api/features/:shape/:pwaCode", h.Create)
+	body := `{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[99,18]},"properties":{"name":"meter-one"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[99.1,18.1]},"properties":{"name":"meter-two"}}]}`
+	req := httptest.NewRequest("POST", "/api/features/flow_meter/5521040", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test returned error: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusCreated {
+		t.Fatalf("expected 201, got %d", resp.StatusCode)
+	}
+	if got, want := creator.names, []string{"meter-one", "meter-two"}; !equalStrings(got, want) {
+		t.Fatalf("create order = %v, want %v", got, want)
+	}
 }

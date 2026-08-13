@@ -69,7 +69,7 @@ func TestTextPtrDecodesWindows874Text(t *testing.T) {
 }
 
 func TestDMAStatsRegionQueryUsesRegionTableAndPrefix(t *testing.T) {
-	query, prefix, err := dmaStatsRegionQuery(9, "prswtusg")
+	query, prefix, err := dmaStatsRegionQuery(9, "prswtusg", "")
 	if err != nil {
 		t.Fatalf("dmaStatsRegionQuery returned error: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestDMAStatsRegionQueryUsesRegionTableAndPrefix(t *testing.T) {
 }
 
 func TestDMAStatsRegionQueryIncludesGroupedSpatialLeftJoin(t *testing.T) {
-	query, _, err := dmaStatsRegionQuery(1, "lstwtusg1")
+	query, _, err := dmaStatsRegionQuery(1, "lstwtusg1", "")
 	if err != nil {
 		t.Fatalf("dmaStatsRegionQuery returned error: %v", err)
 	}
@@ -101,5 +101,26 @@ func TestDMAStatsRegionQueryIncludesGroupedSpatialLeftJoin(t *testing.T) {
 		if !strings.Contains(query, fragment) {
 			t.Fatalf("expected query to contain %q, query was %s", fragment, query)
 		}
+	}
+}
+func TestDMAStatsRegionQueryUsesExactPWACodeWhenSupplied(t *testing.T) {
+	query, pwaCode, err := dmaStatsRegionQuery(1, "prswtusg", "5531011")
+	if err != nil {
+		t.Fatalf("dmaStatsRegionQuery returned error: %v", err)
+	}
+	if pwaCode != "5531011" {
+		t.Fatalf("bound pwa_code = %q, want 5531011", pwaCode)
+	}
+	if !strings.Contains(query, "WHERE dma.pwa_code = $1") {
+		t.Fatalf("expected exact pwa_code filter, query was %s", query)
+	}
+	if strings.Contains(query, "WHERE dma.pwa_code LIKE $1") {
+		t.Fatalf("did not expect region prefix filter, query was %s", query)
+	}
+}
+func TestDMAStatsRegionQueryRejectsPWACodeFromAnotherRegion(t *testing.T) {
+	_, _, err := dmaStatsRegionQuery(1, "prswtusg", "5541011")
+	if err == nil {
+		t.Fatal("expected pwa_code from region 2 to be rejected for region 1")
 	}
 }

@@ -126,3 +126,17 @@ func TestGetStatsRegionRejectsInvalidColumn(t *testing.T) {
 		t.Fatalf("expected 400, got %d", resp.StatusCode)
 	}
 }
+func TestGetStatsRegionRejectsPWACodeFromAnotherRegion(t *testing.T) {
+	app := fiber.New()
+	h := NewDMAHandler(nil)
+	app.Get("/api/dma/stats-region", h.GetStatsRegion)
+
+	req := httptest.NewRequest("GET", "/api/dma/stats-region?region=1&column=prswtusg&pwa_code=5541011", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test returned error: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+}

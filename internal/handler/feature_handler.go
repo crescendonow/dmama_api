@@ -34,7 +34,7 @@ type featureCreator interface {
 
 type featureValidator interface {
 	Validate(context.Context, string, string, *model.FeatureRequest, primitive.ObjectID) (*model.ValidationResult, error)
-	ValidateStepTestCollection(context.Context, string, []model.FeatureRequest) (*model.ValidationResult, error)
+	ValidateCollection(context.Context, string, string, []model.FeatureRequest) (*model.ValidationResult, error)
 }
 
 func NewFeatureHandler(gisPool *pgxpool.Pool, featureDB, usersDB *mongo.Database, systemUser, userDomain string) *FeatureHandler {
@@ -61,7 +61,7 @@ func (h *FeatureHandler) Validate(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(400).JSON(model.ErrorResponse(err.Error()))
 		}
-		result, err := h.validator.ValidateStepTestCollection(c.Context(), pwaCode, requests)
+		result, err := h.validator.ValidateCollection(c.Context(), shape, pwaCode, requests)
 		if err != nil {
 			return h.dbError(c, err)
 		}
@@ -81,15 +81,19 @@ func (h *FeatureHandler) Validate(c *fiber.Ctx) error {
 }
 
 func parseStepTestCollection(body []byte) ([]model.FeatureRequest, error) {
+	return parseFeatureCollection(body, model.ShapeStepTest)
+}
+
+func parseFeatureCollection(body []byte, shape string) ([]model.FeatureRequest, error) {
 	var collection model.FeatureCollectionRequest
 	if err := json.Unmarshal(body, &collection); err != nil {
 		return nil, errors.New("invalid request body")
 	}
 	if collection.Type != "FeatureCollection" {
-		return nil, errors.New("step_test body type must be FeatureCollection")
+		return nil, fmt.Errorf("%s body type must be FeatureCollection", shape)
 	}
 	if len(collection.Features) == 0 {
-		return nil, errors.New("step_test FeatureCollection must include at least one feature")
+		return nil, fmt.Errorf("%s FeatureCollection must include at least one feature", shape)
 	}
 
 	requests := make([]model.FeatureRequest, 0, len(collection.Features))
@@ -101,16 +105,32 @@ func parseStepTestCollection(body []byte) ([]model.FeatureRequest, error) {
 		if item.Type != "Feature" {
 			return nil, fmt.Errorf("feature at index %d must have type Feature", i)
 		}
-		if strings.TrimSpace(item.ID) == "" {
-			return nil, fmt.Errorf("feature at index %d must have a non-empty id", i)
+		if item.Geometry == nil {
+			return nil, fmt.Errorf("feature at index %d must include geometry", i)
 		}
 		if item.Properties == nil {
-			item.Properties = make(map[string]interface{})
+			return nil, fmt.Errorf("feature at index %d must include properties", i)
 		}
-		item.Properties["stepName"] = item.ID
+		if shape == model.ShapeStepTest && strings.TrimSpace(item.ID) == "" {
+			return nil, fmt.Errorf("feature at index %d must have a non-empty id", i)
+		}
+		if shape == model.ShapeStepTest {
+			item.Properties["stepName"] = item.ID
+		}
 		requests = append(requests, item.FeatureRequest)
 	}
 	return requests, nil
+}
+
+func isFeatureCollectionBody(body []byte) bool {
+	var envelope struct {
+		Type     string          `json:"type"`
+		Features json.RawMessage `json:"features"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return false
+	}
+	return envelope.Type == "FeatureCollection" || envelope.Features != nil
 }
 
 // Create validates then stores a new feature.
@@ -120,8 +140,8 @@ func (h *FeatureHandler) Create(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(400).JSON(model.ErrorResponse("invalid shape"))
 	}
-	if shape == model.ShapeStepTest {
-		return h.createStepTestCollection(c, pwaCode)
+	if shape == model.ShapeStepTest || isFeatureCollectionBody(c.Body()) {
+		return h.createFeatureCollection(c, shape, pwaCode)
 	}
 
 	var req model.FeatureRequest
@@ -143,12 +163,12 @@ func (h *FeatureHandler) Create(c *fiber.Ctx) error {
 	return c.Status(201).JSON(model.SuccessResponse(feature))
 }
 
-func (h *FeatureHandler) createStepTestCollection(c *fiber.Ctx, pwaCode string) error {
-	requests, err := parseStepTestCollection(c.Body())
+func (h *FeatureHandler) createFeatureCollection(c *fiber.Ctx, shape, pwaCode string) error {
+	requests, err := parseFeatureCollection(c.Body(), shape)
 	if err != nil {
 		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
 	}
-	preflight, err := h.validator.ValidateStepTestCollection(c.Context(), pwaCode, requests)
+	preflight, err := h.validator.ValidateCollection(c.Context(), shape, pwaCode, requests)
 	if err != nil {
 		return h.dbError(c, err)
 	}
@@ -162,7 +182,7 @@ func (h *FeatureHandler) createStepTestCollection(c *fiber.Ctx, pwaCode string) 
 
 	features := make([]model.Feature, 0, len(requests))
 	for i := range requests {
-		feature, result, err := h.creator.Create(c.Context(), model.ShapeStepTest, pwaCode, &requests[i], c.Get("X-User-Id"))
+		feature, result, err := h.creator.Create(c.Context(), shape, pwaCode, &requests[i], c.Get("X-User-Id"))
 		if err != nil {
 			return h.dbError(c, fmt.Errorf("feature at index %d: %w", i, err))
 		}

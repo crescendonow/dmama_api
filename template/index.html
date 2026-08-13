@@ -696,8 +696,8 @@ res = requests.get(
         </div>
         <p class="text-slate-600 dark:text-slate-300 mb-4">คืนข้อมูลเป็น list โดยแต่ละรายการใช้ shape เดียวกับ <code class="text-xs">/api/dma/stats</code>: <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, <code class="text-xs">column</code>, <code class="text-xs">usage</code>, และ <code class="text-xs">population</code>.</p>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
-          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/dma/stats-region?region=9&column=prswtusg">Copy</button></div>
-          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>GET /api/dma/stats-region?region=<span class="text-amber-300">9</span>&amp;column=<span class="text-emerald-400">prswtusg</span></code></pre>
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example: branch filter</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/dma/stats-region?region=1&column=prswtusg&pwa_code=5531011">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>GET /api/dma/stats-region?region=<span class="text-amber-300">1</span>&amp;column=<span class="text-emerald-400">prswtusg</span>&amp;pwa_code=<span class="text-emerald-400">5531011</span></code></pre>
         </div>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
         <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
@@ -705,10 +705,11 @@ res = requests.get(
           <tbody>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">เขต <code class="text-xs">1..10</code></td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">column</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">default <code class="text-xs">prswtusg</code>; รับเฉพาะ <code class="text-xs">prswtusg</code> หรือ <code class="text-xs">lstwtusg1</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">Exact branch filter. Omit to return all branches in the region.</td></tr>
           </tbody>
         </table>
         <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
-          Endpoint นี้ไม่รับ <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, <code class="text-xs">year</code>, หรือ <code class="text-xs">month</code>; ต้องส่ง <code class="text-xs">region</code> เพื่อดึงทุก DMA ในเขตนั้น
+          The <code class="text-xs">region</code> parameter remains required. Optional <code class="text-xs">pwa_code</code> filters the result to that exact branch; omit it to return every DMA in the region. This endpoint does not accept <code class="text-xs">dma_id</code>, <code class="text-xs">year</code>, or <code class="text-xs">month</code>.
         </div>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
@@ -1190,8 +1191,8 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode</code>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">สร้าง feature ใหม่: validate topology ก่อน จากนั้น insert ลง MongoDB และ upsert เข้า PostGIS mirror. <code class="text-xs">dma_boundary</code> และ <code class="text-xs">flow_meter</code> รับ Feature เดียวเหมือนเดิม ส่วน <code class="text-xs">step_test</code> รับ GeoJSON <code class="text-xs">FeatureCollection</code> และ preflight สมาชิกทั้งหมดก่อนเริ่ม insert รวมทั้งตรวจ overlap ภายใน collection และกับ mirror. สำเร็จคืน <code class="text-xs">201</code>; ถ้า topology ไม่ผ่านคืน <code class="text-xs">400</code> พร้อมรายการ <code class="text-xs">violations</code> โดยยังไม่มี feature ใดถูกบันทึก</p>
-        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (dma_boundary)</h4>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">All three shapes accept a GeoJSON <code class="text-xs">FeatureCollection</code> for create and preflight every member before the first insert. Polygon collections (<code class="text-xs">dma_boundary</code> and <code class="text-xs">step_test</code>) also check overlap between members. <code class="text-xs">dma_boundary</code> and <code class="text-xs">flow_meter</code> remain backward compatible with the existing single-feature body.</p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (dma_boundary single Feature; FeatureCollection also accepted)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
@@ -1202,7 +1203,7 @@ res = requests.get(
         </div>
         <div class="grid md:grid-cols-2 gap-4 mb-4">
           <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>flow_meter</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>flow_meter single Feature; FeatureCollection also accepted</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
             <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
   <span class="text-sky-400">"geometry"</span>: { <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Point"</span>, <span class="text-sky-400">"coordinates"</span>: [<span class="text-amber-300">99.000763952422</span>, <span class="text-amber-300">18.79578125261918</span>] },
   <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"remark"</span>: <span class="text-emerald-400">"postman create"</span> }
@@ -1231,7 +1232,7 @@ res = requests.get(
         </div>
         <p class="text-xs text-slate-500 dark:text-slate-400 mb-2"><code class="text-xs">dma_id</code> = <code class="text-xs">0</code> หรือไม่ส่ง หมายถึง backend กำหนด running number <code class="text-xs">max+1</code> ให้; ถ้าส่งค่าที่ซ้ำกับ <code class="text-xs">dma_boundary</code> เดิมในสาขาเดียวกันจะถูก reject</p>
         <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">สำหรับ <code class="text-xs">step_test</code> ทุก Feature ต้องมี <code class="text-xs">id</code> ที่ไม่ว่าง โดย backend คัดลอกค่านี้ไปเก็บใน <code class="text-xs">properties.stepName</code> (เช่น <code class="text-xs">POL-001</code>) และใช้แทน <code class="text-xs">stepName</code> ที่ client ส่งมา ส่วน <code class="text-xs">id</code> และ <code class="text-xs">properties._id</code> ไม่ถูกใช้เป็นรหัสจัดเก็บ; backend สร้าง MongoDB ObjectID และ server-managed fields ใหม่ให้แต่ละ polygon</p>
-        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response (dma_boundary / flow_meter)</h4>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response (single dma_boundary / flow_meter Feature)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
@@ -1239,7 +1240,7 @@ res = requests.get(
   <span class="text-sky-400">"data"</span>: { <span class="text-sky-400">"id"</span>: <span class="text-emerald-400">"6683..."</span>, <span class="text-sky-400">"type"</span>: <span class="text-emerald-400">"Feature"</span>, <span class="text-sky-400">"geometry"</span>: { ... }, <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"dmaId"</span>: <span class="text-amber-300">53</span>, <span class="text-sky-400">"pwaCode"</span>: <span class="text-emerald-400">"5521040"</span> } }
 }</code></pre>
         </div>
-        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mt-4 mb-2">Response (step_test)</h4>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mt-4 mb-2">Response (FeatureCollection for every shape)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{

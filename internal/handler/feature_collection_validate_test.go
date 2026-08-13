@@ -70,6 +70,10 @@ func (v *recordingFeatureValidator) Validate(context.Context, string, string, *m
 }
 
 func (v *recordingFeatureValidator) ValidateStepTestCollection(_ context.Context, _ string, requests []model.FeatureRequest) (*model.ValidationResult, error) {
+	return v.ValidateCollection(context.Background(), model.ShapeStepTest, "", requests)
+}
+
+func (v *recordingFeatureValidator) ValidateCollection(_ context.Context, _ string, _ string, requests []model.FeatureRequest) (*model.ValidationResult, error) {
 	for i := range requests {
 		name, _ := requests[i].Properties["name"].(string)
 		v.names = append(v.names, name)

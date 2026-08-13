@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"dmama_api/internal/model"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestValidateStepTestCollectionReportsOverlappingMemberIndexes(t *testing.T) {
@@ -31,6 +33,78 @@ func TestValidateStepTestCollectionReportsOverlappingMemberIndexes(t *testing.T)
 	if violation := result.Violations[0]; !strings.Contains(violation, "index 1") || !strings.Contains(violation, "index 0") {
 		t.Fatalf("violation = %q, want both overlapping indexes", violation)
 	}
+}
+
+func TestValidateDmaBoundaryCollectionRejectsDuplicateRequestedDmaIDs(t *testing.T) {
+	svc := &FeatureService{topology: &recordingFeatureTopology{}}
+	requests := []model.FeatureRequest{
+		{Geometry: squarePolygon(0, 0, 1, 1), Properties: map[string]interface{}{}, DmaID: 7},
+		{Geometry: squarePolygon(2, 2, 3, 3), Properties: map[string]interface{}{}, DmaID: 7},
+	}
+
+	result, err := svc.ValidateCollection(context.Background(), model.ShapeDmaBoundary, "5521040", requests)
+	if err != nil {
+		t.Fatalf("ValidateCollection returned error: %v", err)
+	}
+	if result.Valid {
+		t.Fatalf("expected duplicate dma_id collection to be invalid: %#v", result)
+	}
+	if got := strings.Join(result.Violations, "; "); !strings.Contains(got, "index 1") || !strings.Contains(got, "index 0") || !strings.Contains(got, "dma_id 7") {
+		t.Fatalf("violations = %q, want duplicate dma_id with both indexes", got)
+	}
+}
+
+func TestValidateDmaBoundaryCollectionReservesAutoAssignedDmaIDs(t *testing.T) {
+	svc := &FeatureService{
+		topology: &recordingFeatureTopology{},
+		dmaIDs:   &fixedFeatureDMAIDs{max: 5},
+	}
+	requests := []model.FeatureRequest{
+		{Geometry: squarePolygon(0, 0, 1, 1), Properties: map[string]interface{}{}},
+		{Geometry: squarePolygon(2, 2, 3, 3), Properties: map[string]interface{}{}, DmaID: 6},
+	}
+
+	result, err := svc.ValidateCollection(context.Background(), model.ShapeDmaBoundary, "5521040", requests)
+	if err != nil {
+		t.Fatalf("ValidateCollection returned error: %v", err)
+	}
+	if result.Valid {
+		t.Fatalf("expected auto/explicit dma_id collision to be invalid: %#v", result)
+	}
+	if got := strings.Join(result.Violations, "; "); !strings.Contains(got, "index 1") || !strings.Contains(got, "index 0") || !strings.Contains(got, "dma_id 6") {
+		t.Fatalf("violations = %q, want reserved auto dma_id collision with both indexes", got)
+	}
+}
+
+func TestValidateDmaBoundaryCollectionTreatsNegativeDmaIDAsAutomatic(t *testing.T) {
+	svc := &FeatureService{
+		topology: &recordingFeatureTopology{},
+		dmaIDs:   &fixedFeatureDMAIDs{max: 5},
+	}
+	requests := []model.FeatureRequest{
+		{Geometry: squarePolygon(0, 0, 1, 1), Properties: map[string]interface{}{}, DmaID: -1},
+		{Geometry: squarePolygon(2, 2, 3, 3), Properties: map[string]interface{}{}, DmaID: 6},
+	}
+
+	result, err := svc.ValidateCollection(context.Background(), model.ShapeDmaBoundary, "5521040", requests)
+	if err != nil {
+		t.Fatalf("ValidateCollection returned error: %v", err)
+	}
+	if result.Valid {
+		t.Fatalf("expected negative-auto/explicit dma_id collision to be invalid: %#v", result)
+	}
+}
+
+type fixedFeatureDMAIDs struct {
+	max int
+}
+
+func (f *fixedFeatureDMAIDs) MaxDmaID(context.Context, string) (int, error) {
+	return f.max, nil
+}
+
+func (f *fixedFeatureDMAIDs) DmaIDExists(context.Context, string, int, primitive.ObjectID) (bool, error) {
+	return false, nil
 }
 
 type recordingFeatureTopology struct {

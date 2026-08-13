@@ -88,8 +88,8 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 }
 
 // GetStatsRegion returns merged usage and population statistics for every DMA in a region.
-func (s *DMAService) GetStatsRegion(ctx context.Context, region int, column string) ([]model.DMAStats, error) {
-	return s.customerRepo.GetStatsRegion(ctx, region, column)
+func (s *DMAService) GetStatsRegion(ctx context.Context, region int, column, pwaCode string) ([]model.DMAStats, error) {
+	return s.customerRepo.GetStatsRegion(ctx, region, column, pwaCode)
 }
 
 // GetDailyMeterCount counts active meters within a DMA. The column parameter is accepted by the handler for stats payload compatibility but is not used here.

@@ -193,7 +193,18 @@ func (h *DMAHandler) GetStatsRegion(c *fiber.Ctx) error {
 		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
 	}
 
-	result, err := h.dmaService.GetStatsRegion(c.Context(), region, column)
+	pwaCode := c.Query("pwa_code")
+	if pwaCode != "" {
+		pwaRegion, err := repository.RegionFromPWACode(pwaCode)
+		if err != nil {
+			return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+		}
+		if pwaRegion != region {
+			return c.Status(400).JSON(model.ErrorResponse("pwa_code does not belong to the requested region"))
+		}
+	}
+
+	result, err := h.dmaService.GetStatsRegion(c.Context(), region, column, pwaCode)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}

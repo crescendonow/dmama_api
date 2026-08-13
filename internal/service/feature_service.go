@@ -16,6 +16,7 @@ import (
 // valid ones to MongoDB (Vallaris, source of truth) while mirroring them into dmama_layer.
 type FeatureService struct {
 	features   *repository.FeatureRepo
+	dmaIDs     featureDMAIDs
 	topology   featureTopology
 	users      *repository.UserRepo // claystone user directory; may be nil
 	userDomain string
@@ -23,6 +24,11 @@ type FeatureService struct {
 }
 
 // featureTopology is the PostGIS seam used by validation and mirror persistence.
+type featureDMAIDs interface {
+	MaxDmaID(context.Context, string) (int, error)
+	DmaIDExists(context.Context, string, int, primitive.ObjectID) (bool, error)
+}
+
 type featureTopology interface {
 	CheckValidity(context.Context, string) (bool, string, error)
 	OverlapsExisting(context.Context, string, string, string, string) (bool, error)
@@ -40,7 +46,7 @@ func NewFeatureService(features *repository.FeatureRepo, topology *repository.To
 	if err != nil {
 		uid = primitive.NilObjectID
 	}
-	return &FeatureService{features: features, topology: topology, users: users, userDomain: userDomain, systemUser: uid}
+	return &FeatureService{features: features, dmaIDs: features, topology: topology, users: users, userDomain: userDomain, systemUser: uid}
 }
 
 // Validate runs the topology rules for a shape without persisting. excludeID is the id of the
@@ -102,15 +108,57 @@ func (s *FeatureService) Validate(ctx context.Context, shape, pwaCode string, re
 	return result, nil
 }
 
-// ValidateStepTestCollection validates every member and detects interior overlap between members.
-// Violations and warnings retain the zero-based member index used by the request payload.
+// ValidateStepTestCollection preserves the existing public service contract.
 func (s *FeatureService) ValidateStepTestCollection(ctx context.Context, pwaCode string, requests []model.FeatureRequest) (*model.ValidationResult, error) {
+	return s.ValidateCollection(ctx, model.ShapeStepTest, pwaCode, requests)
+}
+
+// ValidateCollection validates every member and detects interior overlap for polygon shapes.
+// Violations and warnings retain the zero-based member index used by the request payload.
+func (s *FeatureService) ValidateCollection(ctx context.Context, shape, pwaCode string, requests []model.FeatureRequest) (*model.ValidationResult, error) {
 	result := &model.ValidationResult{Valid: true}
 	geometries := make([]string, 0, len(requests))
 	geometryIndexes := make([]int, 0, len(requests))
+	dmaIDIndexes := make(map[int]int)
+	currentMaxDmaID := 0
+	if shape == model.ShapeDmaBoundary && s.dmaIDs != nil {
+		var err error
+		currentMaxDmaID, err = s.dmaIDs.MaxDmaID(ctx, pwaCode)
+		if err != nil {
+			return nil, fmt.Errorf("read maximum dma_id: %w", err)
+		}
+	}
 
 	for i := range requests {
-		memberResult, err := s.Validate(ctx, model.ShapeStepTest, pwaCode, &requests[i], primitive.NilObjectID)
+		if shape == model.ShapeDmaBoundary {
+			dmaID := requests[i].DmaID
+			if dmaID <= 0 && s.dmaIDs != nil {
+				dmaID = currentMaxDmaID + 1
+			}
+			if dmaID > 0 {
+				if first, duplicate := dmaIDIndexes[dmaID]; duplicate {
+					result.Violations = append(result.Violations,
+						fmt.Sprintf("feature at index %d: dma_id %d duplicates feature at index %d", i, dmaID, first))
+				} else {
+					dmaIDIndexes[dmaID] = i
+					if requests[i].DmaID > 0 && s.dmaIDs != nil {
+						exists, err := s.dmaIDs.DmaIDExists(ctx, pwaCode, dmaID, primitive.NilObjectID)
+						if err != nil {
+							return nil, fmt.Errorf("feature at index %d: check dma_id: %w", i, err)
+						}
+						if exists {
+							result.Violations = append(result.Violations, fmt.Sprintf(
+								"feature at index %d: dma_id %d already exists in branch %s", i, dmaID, pwaCode))
+						}
+					}
+				}
+				if dmaID > currentMaxDmaID {
+					currentMaxDmaID = dmaID
+				}
+			}
+		}
+
+		memberResult, err := s.Validate(ctx, shape, pwaCode, &requests[i], primitive.NilObjectID)
 		if err != nil {
 			return nil, fmt.Errorf("feature at index %d: %w", i, err)
 		}
@@ -128,7 +176,7 @@ func (s *FeatureService) ValidateStepTestCollection(ctx context.Context, pwaCode
 		}
 	}
 
-	if len(geometries) > 1 {
+	if model.GeometryTypeForShape[shape] == "Polygon" && len(geometries) > 1 {
 		overlaps, err := s.topology.CollectionOverlaps(ctx, geometries)
 		if err != nil {
 			return nil, fmt.Errorf("collection overlap check: %w", err)
@@ -298,7 +346,7 @@ func outsideDmaCoverageMessage(shape string) string {
 // uniqueness (recording a violation on conflict); otherwise the next max+1 is allocated.
 func (s *FeatureService) assignDmaID(ctx context.Context, pwaCode string, requested int, exclude primitive.ObjectID, result *model.ValidationResult) (int, error) {
 	if requested > 0 {
-		exists, err := s.features.DmaIDExists(ctx, pwaCode, requested, exclude)
+		exists, err := s.dmaIDs.DmaIDExists(ctx, pwaCode, requested, exclude)
 		if err != nil {
 			return 0, err
 		}
@@ -309,7 +357,7 @@ func (s *FeatureService) assignDmaID(ctx context.Context, pwaCode string, reques
 		}
 		return requested, nil
 	}
-	max, err := s.features.MaxDmaID(ctx, pwaCode)
+	max, err := s.dmaIDs.MaxDmaID(ctx, pwaCode)
 	if err != nil {
 		return 0, err
 	}

@@ -290,13 +290,26 @@ func (r *CustomerRepo) GetStatsInDMA(ctx context.Context, region int, pwaCode, d
 	return &result, nil
 }
 
-func dmaStatsRegionQuery(region int, column string) (string, string, error) {
+func dmaStatsRegionQuery(region int, column, pwaCode string) (string, string, error) {
 	prefix, err := ZonePrefix(region)
 	if err != nil {
 		return "", "", err
 	}
 
 	tbl := TableName("giswebm_stamp", region, "bl_customer")
+	filter := "dma.pwa_code LIKE $1"
+	value := prefix + "%"
+	if pwaCode != "" {
+		pwaRegion, err := RegionFromPWACode(pwaCode)
+		if err != nil {
+			return "", "", err
+		}
+		if pwaRegion != region {
+			return "", "", fmt.Errorf("pwa_code %s does not belong to region %d", pwaCode, region)
+		}
+		filter = "dma.pwa_code = $1"
+		value = pwaCode
+	}
 	query := fmt.Sprintf(`
 		SELECT
 			dma.pwa_code,
@@ -322,26 +335,26 @@ func dmaStatsRegionQuery(region int, column string) (string, string, error) {
 					ELSE ST_Transform(bl.wkb_geometry, ST_SRID(dma.wkb_geometry))
 				END
 			)
-		WHERE dma.pwa_code LIKE $1
+		WHERE %s
 		GROUP BY dma.pwa_code, dma.dma_id
 		ORDER BY dma.pwa_code, dma.dma_id`,
-		column, column, column, column, column, column, column, column, column, column, tbl)
+		column, column, column, column, column, column, column, column, column, column, tbl, filter)
 
-	return query, prefix + "%", nil
+	return query, value, nil
 }
 
 // GetStatsRegion returns merged usage and population statistics for every DMA in a region.
-func (r *CustomerRepo) GetStatsRegion(ctx context.Context, region int, column string) ([]model.DMAStats, error) {
+func (r *CustomerRepo) GetStatsRegion(ctx context.Context, region int, column, pwaCode string) ([]model.DMAStats, error) {
 	if err := ValidateStatsRegionColumn(column); err != nil {
 		return nil, err
 	}
 
-	query, prefix, err := dmaStatsRegionQuery(region, column)
+	query, filterValue, err := dmaStatsRegionQuery(region, column, pwaCode)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := r.pool.Query(ctx, query, prefix)
+	rows, err := r.pool.Query(ctx, query, filterValue)
 	if err != nil {
 		return nil, err
 	}
