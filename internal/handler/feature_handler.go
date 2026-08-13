@@ -101,6 +101,12 @@ func parseStepTestCollection(body []byte) ([]model.FeatureRequest, error) {
 		if item.Type != "Feature" {
 			return nil, fmt.Errorf("feature at index %d must have type Feature", i)
 		}
+		if item.ID != "" {
+			if item.Properties == nil {
+				item.Properties = make(map[string]interface{})
+			}
+			item.Properties["stepName"] = item.ID
+		}
 		requests = append(requests, item.FeatureRequest)
 	}
 	return requests, nil

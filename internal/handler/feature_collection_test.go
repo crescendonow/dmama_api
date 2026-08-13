@@ -63,6 +63,35 @@ func TestCreateStepTestFeatureCollectionCreatesEveryFeatureInOrder(t *testing.T)
 	}
 }
 
+func TestCreateStepTestFeatureCollectionMapsIDToStepName(t *testing.T) {
+	app := fiber.New()
+	creator := &recordingFeatureCreator{}
+	h := &FeatureHandler{
+		creator:   creator,
+		validator: &recordingFeatureValidator{collectionResult: &model.ValidationResult{Valid: true}},
+	}
+	app.Post("/api/features/:shape/:pwaCode", h.Create)
+
+	body := `{
+		"type":"FeatureCollection",
+		"features":[
+			{"type":"Feature","id":"POL-001","geometry":{"type":"Polygon","coordinates":[]},"properties":{"stepName":"old-name"}}
+		]
+	}`
+	req := httptest.NewRequest("POST", "/api/features/step_test/5521040", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test returned error: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusCreated {
+		t.Fatalf("expected 201, got %d", resp.StatusCode)
+	}
+	if got, want := creator.stepNames, []string{"POL-001"}; !equalStrings(got, want) {
+		t.Fatalf("step names = %v, want Feature.id mapping %v", got, want)
+	}
+}
+
 func TestCreateStepTestFeatureCollectionRejectsInvalidEnvelopeBeforeCreate(t *testing.T) {
 	tests := []struct {
 		name string
@@ -213,6 +242,7 @@ func TestCreateNonStepTestStillAcceptsSingleFeatureRequest(t *testing.T) {
 
 type recordingFeatureCreator struct {
 	names     []string
+	stepNames []string
 	responses []createResponse
 }
 
@@ -225,6 +255,8 @@ type createResponse struct {
 func (c *recordingFeatureCreator) Create(_ context.Context, shape, pwaCode string, req *model.FeatureRequest, _ string) (*model.Feature, *model.ValidationResult, error) {
 	name, _ := req.Properties["name"].(string)
 	c.names = append(c.names, name)
+	stepName, _ := req.Properties["stepName"].(string)
+	c.stepNames = append(c.stepNames, stepName)
 	if len(c.responses) > 0 {
 		response := c.responses[0]
 		c.responses = c.responses[1:]

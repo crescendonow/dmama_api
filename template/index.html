@@ -1230,7 +1230,7 @@ res = requests.get(
           </div>
         </div>
         <p class="text-xs text-slate-500 dark:text-slate-400 mb-2"><code class="text-xs">dma_id</code> = <code class="text-xs">0</code> หรือไม่ส่ง หมายถึง backend กำหนด running number <code class="text-xs">max+1</code> ให้; ถ้าส่งค่าที่ซ้ำกับ <code class="text-xs">dma_boundary</code> เดิมในสาขาเดียวกันจะถูก reject</p>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">สำหรับ <code class="text-xs">step_test</code> ค่า <code class="text-xs">id</code> และ <code class="text-xs">properties._id</code> ที่ client ส่งมาไม่ถูกใช้เป็นรหัสจัดเก็บ; backend สร้าง MongoDB ObjectID และ server-managed fields ใหม่ให้แต่ละ polygon</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">สำหรับ <code class="text-xs">step_test</code> backend คัดลอกค่า <code class="text-xs">Feature.id</code> ไปเก็บใน <code class="text-xs">properties.stepName</code> (เช่น <code class="text-xs">POL-001</code>) และใช้ค่านี้แทน <code class="text-xs">stepName</code> ที่ client ส่งมา ส่วน <code class="text-xs">id</code> และ <code class="text-xs">properties._id</code> ไม่ถูกใช้เป็นรหัสจัดเก็บ; backend สร้าง MongoDB ObjectID และ server-managed fields ใหม่ให้แต่ละ polygon</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response (dma_boundary / flow_meter)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>

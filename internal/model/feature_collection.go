@@ -8,8 +8,10 @@ type FeatureCollectionRequest struct {
 	Features []json.RawMessage `json:"features"`
 }
 
-// FeatureCollectionMember omits client id because Create generates the stored ID.
+// FeatureCollectionMember captures the client id as the stepName source.
+// Create still generates the stored MongoDB ID.
 type FeatureCollectionMember struct {
+	ID   string `json:"id"`
 	Type string `json:"type"`
 	FeatureRequest
 }
