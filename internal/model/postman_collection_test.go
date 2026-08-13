@@ -62,9 +62,10 @@ func TestPostmanCollectionHasStepTestCRUD(t *testing.T) {
 		}
 	}
 
-	for _, name := range []string{"features - validate step_test", "features - create step_test", "features - update step_test"} {
-		assertStepTestPostmanBody(t, name, seen[name].Request.Body.Raw)
+	for _, name := range []string{"features - validate step_test", "features - create step_test"} {
+		assertStepTestCollectionPostmanBody(t, name, seen[name].Request.Body.Raw)
 	}
+	assertStepTestPostmanBody(t, "features - update step_test", seen["features - update step_test"].Request.Body.Raw)
 }
 
 type postmanItem struct {
@@ -107,6 +108,30 @@ func assertStepTestPostmanBody(t *testing.T, name, raw string) {
 	for _, key := range []string{"_id", "_createdAt", "_createdBy", "_updatedAt", "_updatedBy"} {
 		if _, ok := body.Properties[key]; ok {
 			t.Fatalf("%s body still has server-managed property %s", name, key)
+		}
+	}
+}
+
+func assertStepTestCollectionPostmanBody(t *testing.T, name, raw string) {
+	t.Helper()
+	var body struct {
+		Type     string            `json:"type"`
+		Features []stepTestFixture `json:"features"`
+	}
+	if err := json.Unmarshal([]byte(raw), &body); err != nil {
+		t.Fatalf("%s body must be JSON: %v", name, err)
+	}
+	if body.Type != "FeatureCollection" || len(body.Features) < 2 {
+		t.Fatalf("%s body = %#v, want FeatureCollection with at least two features", name, body)
+	}
+	for i := range body.Features {
+		if got, _ := body.Features[i].Geometry["type"].(string); got != "Polygon" {
+			t.Fatalf("%s feature %d geometry type = %q, want Polygon", name, i, got)
+		}
+		for _, key := range []string{"_id", "_createdAt", "_createdBy", "_updatedAt", "_updatedBy"} {
+			if _, ok := body.Features[i].Properties[key]; ok {
+				t.Fatalf("%s feature %d still has server-managed property %s", name, i, key)
+			}
 		}
 	}
 }

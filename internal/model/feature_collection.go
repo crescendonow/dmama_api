@@ -2,7 +2,7 @@ package model
 
 import "encoding/json"
 
-// FeatureCollectionRequest is the GeoJSON body accepted only when creating step_test features.
+// FeatureCollectionRequest is the GeoJSON body accepted by step_test create and validate.
 type FeatureCollectionRequest struct {
 	Type     string            `json:"type"`
 	Features []json.RawMessage `json:"features"`

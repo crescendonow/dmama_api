@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -107,6 +108,47 @@ func (r *TopologyRepo) OverlapsExisting(ctx context.Context, shape, pwaCode, geo
 		return false, err
 	}
 	return overlaps, nil
+}
+
+// CollectionOverlaps returns every pair of zero-based indexes whose interiors intersect.
+// Features that only touch along their boundaries are intentionally omitted.
+func (r *TopologyRepo) CollectionOverlaps(ctx context.Context, geometries []string) ([][2]int, error) {
+	if len(geometries) < 2 {
+		return nil, nil
+	}
+	payload, err := json.Marshal(geometries)
+	if err != nil {
+		return nil, fmt.Errorf("marshal collection geometries: %w", err)
+	}
+
+	const q = `
+		WITH inputs AS (
+			SELECT ordinality::int - 1 AS feature_index,
+			       ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(value), 4326)) AS geom
+			FROM jsonb_array_elements_text($1::jsonb) WITH ORDINALITY AS item(value, ordinality)
+		), overlap_pairs AS (
+			SELECT left_item.feature_index AS left_index,
+			       right_item.feature_index AS right_index
+			FROM inputs left_item
+			JOIN inputs right_item ON left_item.feature_index < right_item.feature_index
+			WHERE ST_Intersects(left_item.geom, right_item.geom)
+			  AND NOT ST_Touches(left_item.geom, right_item.geom)
+			ORDER BY left_item.feature_index, right_item.feature_index
+		)
+		SELECT COALESCE(
+			jsonb_agg(jsonb_build_array(left_index, right_index)),
+			'[]'::jsonb
+		) FROM overlap_pairs`
+
+	var raw []byte
+	if err := r.pool.QueryRow(ctx, q, payload).Scan(&raw); err != nil {
+		return nil, err
+	}
+	var pairs [][2]int
+	if err := json.Unmarshal(raw, &pairs); err != nil {
+		return nil, fmt.Errorf("decode collection overlap pairs: %w", err)
+	}
+	return pairs, nil
 }
 
 // WithinDmaCoverage reports whether a geometry is covered by the union of the branch's dma_boundary

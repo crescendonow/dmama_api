@@ -16,10 +16,20 @@ import (
 // valid ones to MongoDB (Vallaris, source of truth) while mirroring them into dmama_layer.
 type FeatureService struct {
 	features   *repository.FeatureRepo
-	topology   *repository.TopologyRepo
+	topology   featureTopology
 	users      *repository.UserRepo // claystone user directory; may be nil
 	userDomain string
 	systemUser primitive.ObjectID
+}
+
+// featureTopology is the PostGIS seam used by validation and mirror persistence.
+type featureTopology interface {
+	CheckValidity(context.Context, string) (bool, string, error)
+	OverlapsExisting(context.Context, string, string, string, string) (bool, error)
+	WithinDmaCoverage(context.Context, string, string) (bool, bool, error)
+	CollectionOverlaps(context.Context, []string) ([][2]int, error)
+	Upsert(context.Context, string, string, string, *int, string, string) error
+	Delete(context.Context, string, string) error
 }
 
 // NewFeatureService wires the repositories. _createdBy/_updatedBy are resolved by looking up
@@ -60,8 +70,7 @@ func (s *FeatureService) Validate(ctx context.Context, shape, pwaCode string, re
 		result.Violations = append(result.Violations, "invalid geometry: "+reason)
 	}
 
-	switch {
-	case shape == model.ShapeDmaBoundary:
+	if shape == model.ShapeDmaBoundary || shape == model.ShapeStepTest {
 		exclude := ""
 		if !excludeID.IsZero() {
 			exclude = excludeID.Hex()
@@ -71,10 +80,12 @@ func (s *FeatureService) Validate(ctx context.Context, shape, pwaCode string, re
 			return nil, fmt.Errorf("overlap check: %w", err)
 		}
 		if overlaps {
-			result.Violations = append(result.Violations, "geometry overlaps an existing dma_boundary in the same branch")
+			result.Violations = append(result.Violations,
+				fmt.Sprintf("geometry overlaps an existing %s in the same branch", shape))
 		}
+	}
 
-	case usesDmaCoverageRule(shape):
+	if usesDmaCoverageRule(shape) {
 		within, hasCoverage, err := s.topology.WithinDmaCoverage(ctx, pwaCode, geomStr)
 		if err != nil {
 			return nil, fmt.Errorf("within-coverage check: %w", err)
@@ -84,6 +95,52 @@ func (s *FeatureService) Validate(ctx context.Context, shape, pwaCode string, re
 				"no dma_boundary mirrored for this branch; within-coverage rule not checked (run sync first)")
 		} else if !within {
 			result.Violations = append(result.Violations, outsideDmaCoverageMessage(shape))
+		}
+	}
+
+	result.Valid = len(result.Violations) == 0
+	return result, nil
+}
+
+// ValidateStepTestCollection validates every member and detects interior overlap between members.
+// Violations and warnings retain the zero-based member index used by the request payload.
+func (s *FeatureService) ValidateStepTestCollection(ctx context.Context, pwaCode string, requests []model.FeatureRequest) (*model.ValidationResult, error) {
+	result := &model.ValidationResult{Valid: true}
+	geometries := make([]string, 0, len(requests))
+	geometryIndexes := make([]int, 0, len(requests))
+
+	for i := range requests {
+		memberResult, err := s.Validate(ctx, model.ShapeStepTest, pwaCode, &requests[i], primitive.NilObjectID)
+		if err != nil {
+			return nil, fmt.Errorf("feature at index %d: %w", i, err)
+		}
+		for _, violation := range memberResult.Violations {
+			result.Violations = append(result.Violations, fmt.Sprintf("feature at index %d: %s", i, violation))
+		}
+		for _, warning := range memberResult.Warnings {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("feature at index %d: %s", i, warning))
+		}
+
+		geometry, err := geometryJSON(requests[i].Geometry)
+		if err == nil {
+			geometries = append(geometries, geometry)
+			geometryIndexes = append(geometryIndexes, i)
+		}
+	}
+
+	if len(geometries) > 1 {
+		overlaps, err := s.topology.CollectionOverlaps(ctx, geometries)
+		if err != nil {
+			return nil, fmt.Errorf("collection overlap check: %w", err)
+		}
+		for _, pair := range overlaps {
+			if pair[0] < 0 || pair[0] >= len(geometryIndexes) || pair[1] < 0 || pair[1] >= len(geometryIndexes) {
+				return nil, fmt.Errorf("collection overlap check returned invalid indexes %d and %d", pair[0], pair[1])
+			}
+			left := geometryIndexes[pair[0]]
+			right := geometryIndexes[pair[1]]
+			result.Violations = append(result.Violations,
+				fmt.Sprintf("feature at index %d overlaps feature at index %d within the collection", right, left))
 		}
 	}
 

@@ -16,7 +16,10 @@ import (
 func TestCreateStepTestFeatureCollectionCreatesEveryFeatureInOrder(t *testing.T) {
 	app := fiber.New()
 	creator := &recordingFeatureCreator{}
-	h := &FeatureHandler{creator: creator}
+	h := &FeatureHandler{
+		creator:   creator,
+		validator: &recordingFeatureValidator{collectionResult: &model.ValidationResult{Valid: true}},
+	}
 	app.Post("/api/features/:shape/:pwaCode", h.Create)
 
 	body := `{
@@ -112,7 +115,10 @@ func TestCreateStepTestFeatureCollectionStopsAtTopologyFailureAndReportsIndex(t 
 			},
 		},
 	}}
-	h := &FeatureHandler{creator: creator}
+	h := &FeatureHandler{
+		creator:   creator,
+		validator: &recordingFeatureValidator{collectionResult: &model.ValidationResult{Valid: true}},
+	}
 	app.Post("/api/features/:shape/:pwaCode", h.Create)
 
 	body := `{
@@ -171,8 +177,8 @@ func TestCreateStepTestFeatureCollectionParsesMembersInOrderAndReportsMalformedI
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", resp.StatusCode)
 	}
-	if got, want := creator.names, []string{"first"}; !equalStrings(got, want) {
-		t.Fatalf("create calls = %v, want %v", got, want)
+	if len(creator.names) != 0 {
+		t.Fatalf("create calls = %v, want none before the collection parses", creator.names)
 	}
 
 	var response model.APIResponse

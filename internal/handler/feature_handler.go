@@ -21,14 +21,20 @@ import (
 // FeatureHandler exposes CRUD + validation for drawn dma_boundary/flow_meter/step_test features.
 // Validation + mirror run on PostGIS 16 (gisPool); the documents persist to Vallaris MongoDB (db).
 type FeatureHandler struct {
-	svc     *service.FeatureService
-	creator featureCreator
+	svc       *service.FeatureService
+	creator   featureCreator
+	validator featureValidator
 }
 
 // featureCreator keeps collection orchestration testable while production continues to use
 // FeatureService and its existing validation, identity, and persistence flow.
 type featureCreator interface {
 	Create(context.Context, string, string, *model.FeatureRequest, string) (*model.Feature, *model.ValidationResult, error)
+}
+
+type featureValidator interface {
+	Validate(context.Context, string, string, *model.FeatureRequest, primitive.ObjectID) (*model.ValidationResult, error)
+	ValidateStepTestCollection(context.Context, string, []model.FeatureRequest) (*model.ValidationResult, error)
 }
 
 func NewFeatureHandler(gisPool *pgxpool.Pool, featureDB, usersDB *mongo.Database, systemUser, userDomain string) *FeatureHandler {
@@ -39,7 +45,7 @@ func NewFeatureHandler(gisPool *pgxpool.Pool, featureDB, usersDB *mongo.Database
 		userRepo = repository.NewUserRepo(usersDB)
 	}
 	svc := service.NewFeatureService(featureRepo, topoRepo, userRepo, systemUser, userDomain)
-	return &FeatureHandler{svc: svc, creator: svc}
+	return &FeatureHandler{svc: svc, creator: svc, validator: svc}
 }
 
 // Validate runs topology rules without persisting (dry run for live frontend feedback).
@@ -50,16 +56,54 @@ func (h *FeatureHandler) Validate(c *fiber.Ctx) error {
 		return c.Status(400).JSON(model.ErrorResponse("invalid shape"))
 	}
 
+	if shape == model.ShapeStepTest {
+		requests, err := parseStepTestCollection(c.Body())
+		if err != nil {
+			return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+		}
+		result, err := h.validator.ValidateStepTestCollection(c.Context(), pwaCode, requests)
+		if err != nil {
+			return h.dbError(c, err)
+		}
+		return c.JSON(model.SuccessResponse(result))
+	}
+
 	var req model.FeatureRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(model.ErrorResponse("invalid request body"))
 	}
 
-	result, err := h.svc.Validate(c.Context(), shape, pwaCode, &req, primitive.NilObjectID)
+	result, err := h.validator.Validate(c.Context(), shape, pwaCode, &req, primitive.NilObjectID)
 	if err != nil {
 		return h.dbError(c, err)
 	}
 	return c.JSON(model.SuccessResponse(result))
+}
+
+func parseStepTestCollection(body []byte) ([]model.FeatureRequest, error) {
+	var collection model.FeatureCollectionRequest
+	if err := json.Unmarshal(body, &collection); err != nil {
+		return nil, errors.New("invalid request body")
+	}
+	if collection.Type != "FeatureCollection" {
+		return nil, errors.New("step_test body type must be FeatureCollection")
+	}
+	if len(collection.Features) == 0 {
+		return nil, errors.New("step_test FeatureCollection must include at least one feature")
+	}
+
+	requests := make([]model.FeatureRequest, 0, len(collection.Features))
+	for i := range collection.Features {
+		var item model.FeatureCollectionMember
+		if err := json.Unmarshal(collection.Features[i], &item); err != nil {
+			return nil, fmt.Errorf("invalid feature at index %d: %v", i, err)
+		}
+		if item.Type != "Feature" {
+			return nil, fmt.Errorf("feature at index %d must have type Feature", i)
+		}
+		requests = append(requests, item.FeatureRequest)
+	}
+	return requests, nil
 }
 
 // Create validates then stores a new feature.
@@ -93,27 +137,25 @@ func (h *FeatureHandler) Create(c *fiber.Ctx) error {
 }
 
 func (h *FeatureHandler) createStepTestCollection(c *fiber.Ctx, pwaCode string) error {
-	var collection model.FeatureCollectionRequest
-	if err := c.BodyParser(&collection); err != nil {
-		return c.Status(400).JSON(model.ErrorResponse("invalid request body"))
+	requests, err := parseStepTestCollection(c.Body())
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
 	}
-	if collection.Type != "FeatureCollection" {
-		return c.Status(400).JSON(model.ErrorResponse("step_test body type must be FeatureCollection"))
+	preflight, err := h.validator.ValidateStepTestCollection(c.Context(), pwaCode, requests)
+	if err != nil {
+		return h.dbError(c, err)
 	}
-	if len(collection.Features) == 0 {
-		return c.Status(400).JSON(model.ErrorResponse("step_test FeatureCollection must include at least one feature"))
+	if !preflight.Valid {
+		return c.Status(400).JSON(model.APIResponse{
+			Success: false,
+			Error:   "topology validation failed: " + strings.Join(preflight.Violations, "; "),
+			Data:    preflight,
+		})
 	}
 
-	features := make([]model.Feature, 0, len(collection.Features))
-	for i := range collection.Features {
-		var item model.FeatureCollectionMember
-		if err := json.Unmarshal(collection.Features[i], &item); err != nil {
-			return c.Status(400).JSON(model.ErrorResponse(fmt.Sprintf("invalid feature at index %d: %v", i, err)))
-		}
-		if item.Type != "Feature" {
-			return c.Status(400).JSON(model.ErrorResponse(fmt.Sprintf("feature at index %d must have type Feature", i)))
-		}
-		feature, result, err := h.creator.Create(c.Context(), model.ShapeStepTest, pwaCode, &item.FeatureRequest, c.Get("X-User-Id"))
+	features := make([]model.Feature, 0, len(requests))
+	for i := range requests {
+		feature, result, err := h.creator.Create(c.Context(), model.ShapeStepTest, pwaCode, &requests[i], c.Get("X-User-Id"))
 		if err != nil {
 			return h.dbError(c, fmt.Errorf("feature at index %d: %w", i, err))
 		}

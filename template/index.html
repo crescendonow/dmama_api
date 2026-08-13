@@ -1146,7 +1146,7 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode/validate</code>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">ตรวจ topology แบบ dry-run โดยไม่บันทึก Mongo และไม่ upsert mirror. ถ้า body อ่านได้และ backend พร้อม แม้ geometry ไม่ผ่านกฎก็คืน <code class="text-xs">200</code> พร้อม <code class="text-xs">valid:false</code>; error จาก body/database จะคืน error ตามปกติ</p>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ตรวจ topology แบบ dry-run โดยไม่บันทึก Mongo และไม่ upsert mirror. <code class="text-xs">dma_boundary</code> และ <code class="text-xs">flow_meter</code> รับ Feature เดียว; <code class="text-xs">step_test</code> รับ FeatureCollection และตรวจสมาชิกทุกตัว รวมทั้ง overlap ภายใน collection และ overlap กับ <code class="text-xs">step_test</code> ที่มีอยู่ใน mirror. ถ้า topology ไม่ผ่านจะคืน <code class="text-xs">200</code> พร้อม <code class="text-xs">valid:false</code>; error จาก body/database จะคืน error ตามปกติ</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (flow_meter)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
@@ -1155,7 +1155,10 @@ res = requests.get(
   <span class="text-sky-400">"properties"</span>: { <span class="text-sky-400">"remark"</span>: <span class="text-emerald-400">"postman validate"</span> }
 }</code></pre>
         </div>
-        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response</h4>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (step_test)</h4>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">ใช้ GeoJSON <code class="text-xs">FeatureCollection</code> รูปแบบเดียวกับตัวอย่าง create ด้านล่าง. แต่ละ violation/warning จะระบุ index แบบเริ่มจาก 0; polygon ที่แตะกันเฉพาะขอบอนุญาต แต่พื้นที่ภายในซ้อนกันไม่อนุญาต.</p>
+        <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">ก่อน validate ข้อมูลเดิม ให้ sync <code class="text-xs">dma_boundary</code> และ <code class="text-xs">step_test</code> mirror ของสาขานั้น เพื่อให้ coverage และ overlap checks เทียบกับข้อมูลล่าสุด.</div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response example (flow_meter)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
@@ -1163,6 +1166,18 @@ res = requests.get(
   <span class="text-sky-400">"data"</span>: {
     <span class="text-sky-400">"valid"</span>: <span class="text-amber-300">false</span>,
     <span class="text-sky-400">"violations"</span>: [<span class="text-emerald-400">"point is outside the branch dma_boundary coverage"</span>],
+    <span class="text-sky-400">"warnings"</span>: []
+  }
+}</code></pre>
+        </div>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mt-4 mb-2">Response example (step_test overlap)</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"data"</span>: {
+    <span class="text-sky-400">"valid"</span>: <span class="text-amber-300">false</span>,
+    <span class="text-sky-400">"violations"</span>: [<span class="text-emerald-400">"feature at index 1 overlaps feature at index 0 within the collection"</span>],
     <span class="text-sky-400">"warnings"</span>: []
   }
 }</code></pre>
@@ -1175,7 +1190,7 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode</code>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">สร้าง feature ใหม่: validate topology ก่อน จากนั้น insert ลง MongoDB และ upsert เข้า PostGIS mirror. <code class="text-xs">dma_boundary</code> และ <code class="text-xs">flow_meter</code> รับ Feature เดียวเหมือนเดิม ส่วน <code class="text-xs">step_test</code> รับ GeoJSON <code class="text-xs">FeatureCollection</code>. สำเร็จคืน <code class="text-xs">201</code>; ถ้า topology ไม่ผ่านคืน <code class="text-xs">400</code> พร้อมรายการ <code class="text-xs">violations</code></p>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">สร้าง feature ใหม่: validate topology ก่อน จากนั้น insert ลง MongoDB และ upsert เข้า PostGIS mirror. <code class="text-xs">dma_boundary</code> และ <code class="text-xs">flow_meter</code> รับ Feature เดียวเหมือนเดิม ส่วน <code class="text-xs">step_test</code> รับ GeoJSON <code class="text-xs">FeatureCollection</code> และ preflight สมาชิกทั้งหมดก่อนเริ่ม insert รวมทั้งตรวจ overlap ภายใน collection และกับ mirror. สำเร็จคืน <code class="text-xs">201</code>; ถ้า topology ไม่ผ่านคืน <code class="text-xs">400</code> พร้อมรายการ <code class="text-xs">violations</code> โดยยังไม่มี feature ใดถูกบันทึก</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (dma_boundary)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
@@ -1239,7 +1254,7 @@ res = requests.get(
   }
 }</code></pre>
         </div>
-        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">ระบบประมวลผล <code class="text-xs">features</code> ตามลำดับและหยุดที่รายการแรกที่ parse, type, topology หรือ persistence ไม่ผ่าน โดย error ระบุ index แบบเริ่มจาก 0 รายการก่อนหน้าที่บันทึกสำเร็จแล้วจะไม่ rollback เนื่องจาก MongoDB และ PostGIS mirror ไม่มี transaction ร่วมกัน หาก MongoDB insert สำเร็จแต่ PostGIS mirror ล้มเหลว รายการที่ error เองอาจค้างอยู่เฉพาะใน MongoDB และการ retry อาจสร้าง ObjectID ใหม่เพิ่ม</div>
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">ระบบ parse และ preflight topology ของทุก feature ก่อนเริ่มเขียนข้อมูล ดังนั้น parse/type/topology failure จะไม่ insert รายการใดเลย. หลัง preflight ผ่านจึง persist ตามลำดับและหยุดที่ persistence failure แรก โดย error ระบุ index แบบเริ่มจาก 0; รายการก่อนหน้าที่บันทึกสำเร็จแล้วจะไม่ rollback เพราะ MongoDB และ PostGIS mirror ไม่มี transaction ร่วมกัน. หาก MongoDB insert สำเร็จแต่ PostGIS mirror ล้มเหลว รายการที่ error เองอาจค้างอยู่เฉพาะใน MongoDB และการ retry อาจสร้าง ObjectID ใหม่เพิ่ม.</div>
       </section>
 
       <!-- Feature: List -->
