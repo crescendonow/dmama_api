@@ -160,12 +160,13 @@ func (h *DMAHandler) GetStats(c *fiber.Ctx) error {
 		return c.Status(400).JSON(model.ErrorResponse("pwa_code and dma_id are required"))
 	}
 
-	column, err := service.ResolveStatsColumn(c.Query("year"), c.Query("month"), c.Query("column"), time.Now())
+	now := time.Now()
+	column, err := service.ResolveStatsColumn(c.Query("year"), c.Query("month"), c.Query("column"), now)
 	if err != nil {
 		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
 	}
 
-	result, err := h.dmaService.GetStats(c.Context(), pwaCode, dmaID, column, region)
+	result, err := h.dmaService.GetStats(c.Context(), pwaCode, dmaID, column, region, now)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}
@@ -204,7 +205,8 @@ func (h *DMAHandler) GetStatsRegion(c *fiber.Ctx) error {
 		}
 	}
 
-	result, err := h.dmaService.GetStatsRegion(c.Context(), region, column, pwaCode)
+	now := time.Now()
+	result, err := h.dmaService.GetStatsRegion(c.Context(), region, column, pwaCode, now)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}

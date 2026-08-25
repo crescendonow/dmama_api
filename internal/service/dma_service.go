@@ -56,26 +56,30 @@ func (s *DMAService) GetPopulation(ctx context.Context, pwaCode, dmaID, column s
 }
 
 // GetStats returns merged usage and population statistics for a DMA. (Endpoint stats)
-func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string, region int) (*model.DMAStats, error) {
+func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string, region int, now time.Time) (*model.DMAStats, error) {
 	key := fmt.Sprintf("%d:%s:%s:%s", region, pwaCode, dmaID, column)
-	now := time.Now()
+	yearMonth, err := ResolveStatsYearMonth(column, now)
+	if err != nil {
+		return nil, err
+	}
 	if cached, ok := s.statsCache.Load(key); ok {
 		entry := cached.(statsCacheEntry)
 		if now.Before(entry.expiresAt) {
-			return prepareDMAStatsResponse(entry.value, pwaCode, dmaID, column, now), nil
+			return prepareDMAStatsResponse(entry.value, pwaCode, dmaID, column, yearMonth), nil
 		}
 		s.statsCache.Delete(key)
 	}
 
-	value, err, _ := s.statsGroup.Do(key, func() (interface{}, error) {
+	flightKey := key + ":" + yearMonth
+	value, err, _ := s.statsGroup.Do(flightKey, func() (interface{}, error) {
 		result, err := s.customerRepo.GetStatsInDMA(ctx, region, pwaCode, dmaID, column)
 		if err != nil || result == nil {
 			return result, err
 		}
-		result = prepareDMAStatsResponse(result, pwaCode, dmaID, column, now)
+		result = prepareDMAStatsResponse(result, pwaCode, dmaID, column, yearMonth)
 		s.statsCache.Store(key, statsCacheEntry{
 			value:     cloneDMAStats(result),
-			expiresAt: time.Now().Add(statsCacheTTL),
+			expiresAt: statsCacheExpiresAt(now),
 		})
 		return result, nil
 	})
@@ -85,17 +89,20 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 	if value == nil {
 		return nil, nil
 	}
-	return prepareDMAStatsResponse(value.(*model.DMAStats), pwaCode, dmaID, column, now), nil
+	return prepareDMAStatsResponse(value.(*model.DMAStats), pwaCode, dmaID, column, yearMonth), nil
 }
 
 // GetStatsRegion returns merged usage and population statistics for every DMA in a region.
-func (s *DMAService) GetStatsRegion(ctx context.Context, region int, column, pwaCode string) ([]model.DMAStats, error) {
-	now := time.Now()
+func (s *DMAService) GetStatsRegion(ctx context.Context, region int, column, pwaCode string, now time.Time) ([]model.DMAStats, error) {
+	yearMonth, err := ResolveStatsYearMonth(column, now)
+	if err != nil {
+		return nil, err
+	}
 	stats, err := s.customerRepo.GetStatsRegion(ctx, region, column, pwaCode)
 	if err != nil {
 		return nil, err
 	}
-	return prepareDMAStatsRegionResponse(stats, column, now), nil
+	return prepareDMAStatsRegionResponse(stats, column, yearMonth), nil
 }
 
 // GetDailyMeterCount counts active meters within a DMA. The column parameter is accepted by the handler for stats payload compatibility but is not used here.
@@ -174,23 +181,38 @@ func statsBillingPeriod(now time.Time) time.Time {
 	return period
 }
 
-// StatsYearMonth returns the Buddhist Era billing period for a stats column.
-func StatsYearMonth(column string, now time.Time) string {
+// ResolveStatsYearMonth returns the Buddhist Era billing period for a valid stats column.
+func ResolveStatsYearMonth(column string, now time.Time) (string, error) {
+	if err := repository.ValidateColumn(column); err != nil {
+		return "", err
+	}
+
 	offset := 0
 	if column != "prswtusg" {
 		const previousUsagePrefix = "lstwtusg"
 		if !strings.HasPrefix(column, previousUsagePrefix) {
-			return ""
+			return "", nil
 		}
 		parsedOffset, err := strconv.Atoi(strings.TrimPrefix(column, previousUsagePrefix))
 		if err != nil || parsedOffset < 1 || parsedOffset > 12 {
-			return ""
+			return "", fmt.Errorf("invalid billing column: %s", column)
 		}
 		offset = parsedOffset
 	}
 	period := statsBillingPeriod(now)
 	period = period.AddDate(0, -offset, 0)
-	return fmt.Sprintf("%04d%02d", period.Year()+543, period.Month())
+	return fmt.Sprintf("%04d%02d", period.Year()+543, period.Month()), nil
+}
+
+func statsCacheExpiresAt(now time.Time) time.Time {
+	expiresAt := now.Add(statsCacheTTL)
+	if now.Day() <= statsBillingCutoffDay {
+		billingBoundary := time.Date(now.Year(), now.Month(), statsBillingCutoffDay+1, 0, 0, 0, 0, now.Location())
+		if billingBoundary.Before(expiresAt) {
+			return billingBoundary
+		}
+	}
+	return expiresAt
 }
 
 func cloneDMAStats(stats *model.DMAStats) *model.DMAStats {
@@ -201,7 +223,7 @@ func cloneDMAStats(stats *model.DMAStats) *model.DMAStats {
 	return &copied
 }
 
-func prepareDMAStatsResponse(stats *model.DMAStats, pwaCode, dmaID, column string, now time.Time) *model.DMAStats {
+func prepareDMAStatsResponse(stats *model.DMAStats, pwaCode, dmaID, column, yearMonth string) *model.DMAStats {
 	copied := cloneDMAStats(stats)
 	if copied == nil {
 		return nil
@@ -209,15 +231,14 @@ func prepareDMAStatsResponse(stats *model.DMAStats, pwaCode, dmaID, column strin
 	copied.PwaCode = pwaCode
 	copied.DmaID = dmaID
 	copied.Column = column
-	copied.YearMonth = StatsYearMonth(column, now)
+	copied.YearMonth = yearMonth
 	return copied
 }
 
-func prepareDMAStatsRegionResponse(stats []model.DMAStats, column string, now time.Time) []model.DMAStats {
+func prepareDMAStatsRegionResponse(stats []model.DMAStats, column, yearMonth string) []model.DMAStats {
 	prepared := make([]model.DMAStats, len(stats))
 	copy(prepared, stats)
 
-	yearMonth := StatsYearMonth(column, now)
 	for i := range prepared {
 		prepared[i].Column = column
 		prepared[i].YearMonth = yearMonth
