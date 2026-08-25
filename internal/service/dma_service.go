@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,7 +62,7 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 	if cached, ok := s.statsCache.Load(key); ok {
 		entry := cached.(statsCacheEntry)
 		if now.Before(entry.expiresAt) {
-			return prepareDMAStatsResponse(entry.value, pwaCode, dmaID, column), nil
+			return prepareDMAStatsResponse(entry.value, pwaCode, dmaID, column, now), nil
 		}
 		s.statsCache.Delete(key)
 	}
@@ -71,7 +72,7 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 		if err != nil || result == nil {
 			return result, err
 		}
-		result = prepareDMAStatsResponse(result, pwaCode, dmaID, column)
+		result = prepareDMAStatsResponse(result, pwaCode, dmaID, column, now)
 		s.statsCache.Store(key, statsCacheEntry{
 			value:     cloneDMAStats(result),
 			expiresAt: time.Now().Add(statsCacheTTL),
@@ -84,12 +85,17 @@ func (s *DMAService) GetStats(ctx context.Context, pwaCode, dmaID, column string
 	if value == nil {
 		return nil, nil
 	}
-	return prepareDMAStatsResponse(value.(*model.DMAStats), pwaCode, dmaID, column), nil
+	return prepareDMAStatsResponse(value.(*model.DMAStats), pwaCode, dmaID, column, now), nil
 }
 
 // GetStatsRegion returns merged usage and population statistics for every DMA in a region.
 func (s *DMAService) GetStatsRegion(ctx context.Context, region int, column, pwaCode string) ([]model.DMAStats, error) {
-	return s.customerRepo.GetStatsRegion(ctx, region, column, pwaCode)
+	now := time.Now()
+	stats, err := s.customerRepo.GetStatsRegion(ctx, region, column, pwaCode)
+	if err != nil {
+		return nil, err
+	}
+	return prepareDMAStatsRegionResponse(stats, column, now), nil
 }
 
 // GetDailyMeterCount counts active meters within a DMA. The column parameter is accepted by the handler for stats payload compatibility but is not used here.
@@ -123,7 +129,7 @@ func ResolveStatsColumn(yearStr, monthStr, column string, now time.Time) (string
 		}
 
 		diffMonth := (now.Year()*12 + int(now.Month())) - (year*12 + month)
-		if now.Day() < 20 {
+		if now.Day() <= statsBillingCutoffDay {
 			diffMonth--
 		}
 		if diffMonth < 0 {
@@ -158,6 +164,35 @@ func ResolveStatsRegionColumn(column string) (string, error) {
 	return column, nil
 }
 
+const statsBillingCutoffDay = 15
+
+func statsBillingPeriod(now time.Time) time.Time {
+	period := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	if now.Day() <= statsBillingCutoffDay {
+		return period.AddDate(0, -1, 0)
+	}
+	return period
+}
+
+// StatsYearMonth returns the Buddhist Era billing period for a stats column.
+func StatsYearMonth(column string, now time.Time) string {
+	offset := 0
+	if column != "prswtusg" {
+		const previousUsagePrefix = "lstwtusg"
+		if !strings.HasPrefix(column, previousUsagePrefix) {
+			return ""
+		}
+		parsedOffset, err := strconv.Atoi(strings.TrimPrefix(column, previousUsagePrefix))
+		if err != nil || parsedOffset < 1 || parsedOffset > 12 {
+			return ""
+		}
+		offset = parsedOffset
+	}
+	period := statsBillingPeriod(now)
+	period = period.AddDate(0, -offset, 0)
+	return fmt.Sprintf("%04d%02d", period.Year()+543, period.Month())
+}
+
 func cloneDMAStats(stats *model.DMAStats) *model.DMAStats {
 	if stats == nil {
 		return nil
@@ -166,7 +201,7 @@ func cloneDMAStats(stats *model.DMAStats) *model.DMAStats {
 	return &copied
 }
 
-func prepareDMAStatsResponse(stats *model.DMAStats, pwaCode, dmaID, column string) *model.DMAStats {
+func prepareDMAStatsResponse(stats *model.DMAStats, pwaCode, dmaID, column string, now time.Time) *model.DMAStats {
 	copied := cloneDMAStats(stats)
 	if copied == nil {
 		return nil
@@ -174,5 +209,18 @@ func prepareDMAStatsResponse(stats *model.DMAStats, pwaCode, dmaID, column strin
 	copied.PwaCode = pwaCode
 	copied.DmaID = dmaID
 	copied.Column = column
+	copied.YearMonth = StatsYearMonth(column, now)
 	return copied
+}
+
+func prepareDMAStatsRegionResponse(stats []model.DMAStats, column string, now time.Time) []model.DMAStats {
+	prepared := make([]model.DMAStats, len(stats))
+	copy(prepared, stats)
+
+	yearMonth := StatsYearMonth(column, now)
+	for i := range prepared {
+		prepared[i].Column = column
+		prepared[i].YearMonth = yearMonth
+	}
+	return prepared
 }

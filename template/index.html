@@ -632,10 +632,13 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/stats</code>
         </div>
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
+          Every response includes <code class="text-xs">year_month</code> as Buddhist Era <code class="text-xs">YYYYMM</code>. On days 1-15, <code class="text-xs">prswtusg</code> represents the previous calendar month; on day 16 through month end, it represents the current month. At 2026-08-25, <code class="text-xs">prswtusg</code> is <code class="text-xs">256908</code> and <code class="text-xs">lstwtusg1</code> is <code class="text-xs">256907</code>. Legacy <code class="text-xs">use_water</code> and <code class="text-xs">use_jan..use_dec</code> remain accepted by this endpoint but return <code class="text-xs">year_month: ""</code>.
+        </div>
         <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
           ใช้สำหรับดึงสถิติการใช้น้ำและจำนวนผู้ใช้น้ำรายเดือนใน DMA โดยแนะนำให้ส่ง <code class="text-xs">year</code> + <code class="text-xs">month</code>. ยังรองรับ <code class="text-xs">column</code> เพื่อ backward compatibility เช่น <code class="text-xs">prswtusg</code>, <code class="text-xs">lstwtusg1..12</code>.
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">คืนข้อมูลเป็น JSON แบบ nested แยกเป็น <code class="text-xs">usage</code> และ <code class="text-xs">population</code> พร้อมระบุ <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, และ <code class="text-xs">column</code> ที่ใช้ query.</p>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">คืนข้อมูลเป็น JSON แบบ nested แยกเป็น <code class="text-xs">usage</code> และ <code class="text-xs">population</code> พร้อมระบุ <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, <code class="text-xs">column</code>, และ <code class="text-xs">year_month</code> ที่ใช้ query.</p>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Parameters</h4>
         <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
           <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
@@ -665,7 +668,8 @@ res = requests.get(
   <span class="text-sky-400">"data"</span>: {
     <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5541026"</span>,
     <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"1"</span>,
-    <span class="text-sky-400">"column"</span>: <span class="text-emerald-400">"lstwtusg11"</span>,
+    <span class="text-sky-400">"column"</span>: <span class="text-emerald-400">"lstwtusg1"</span>,
+    <span class="text-sky-400">"year_month"</span>: <span class="text-emerald-400">"256907"</span>,
     <span class="text-sky-400">"usage"</span>: {
       <span class="text-sky-400">"total"</span>: <span class="text-amber-300">170350.5</span>,
       <span class="text-sky-400">"house"</span>: <span class="text-amber-300">111250</span>,
@@ -691,10 +695,13 @@ res = requests.get(
           <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/stats-region</code>
         </div>
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
+          Every result item includes <code class="text-xs">year_month</code> as Buddhist Era <code class="text-xs">YYYYMM</code>. On days 1-15, <code class="text-xs">prswtusg</code> represents the previous calendar month; on day 16 through month end, it represents the current month. At 2026-08-25, <code class="text-xs">prswtusg</code> is <code class="text-xs">256908</code> and <code class="text-xs">lstwtusg1</code> is <code class="text-xs">256907</code>.
+        </div>
         <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
           ใช้สำหรับดึงสถิติการใช้น้ำและจำนวนผู้ใช้น้ำของทุก DMA ในเขตเดียว เหมาะกับงาน aggregate รายเขตแทนการเรียก <code class="text-xs">/api/dma/stats</code> ซ้ำหลายครั้ง
         </div>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">คืนข้อมูลเป็น list โดยแต่ละรายการใช้ shape เดียวกับ <code class="text-xs">/api/dma/stats</code>: <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, <code class="text-xs">column</code>, <code class="text-xs">usage</code>, และ <code class="text-xs">population</code>.</p>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">คืนข้อมูลเป็น list โดยแต่ละรายการใช้ shape เดียวกับ <code class="text-xs">/api/dma/stats</code>: <code class="text-xs">pwa_code</code>, <code class="text-xs">dma_id</code>, <code class="text-xs">column</code>, <code class="text-xs">year_month</code>, <code class="text-xs">usage</code>, และ <code class="text-xs">population</code>.</p>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>Example: branch filter</span><button class="copy-btn hover:text-white transition-colors" data-copy="/api/dma/stats-region?region=1&column=prswtusg&pwa_code=5531011">Copy</button></div>
           <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>GET /api/dma/stats-region?region=<span class="text-amber-300">1</span>&amp;column=<span class="text-emerald-400">prswtusg</span>&amp;pwa_code=<span class="text-emerald-400">5531011</span></code></pre>
@@ -704,7 +711,7 @@ res = requests.get(
           <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
           <tbody>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2">เขต <code class="text-xs">1..10</code></td></tr>
-            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">column</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">default <code class="text-xs">prswtusg</code>; รับเฉพาะ <code class="text-xs">prswtusg</code> หรือ <code class="text-xs">lstwtusg1</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">column</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">default <code class="text-xs">prswtusg</code>; รับเฉพาะ <code class="text-xs">prswtusg</code> หรือ <code class="text-xs">lstwtusg1..12</code></td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">Exact branch filter. Omit to return all branches in the region.</td></tr>
           </tbody>
         </table>
@@ -721,6 +728,7 @@ res = requests.get(
       <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5511013"</span>,
       <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"6"</span>,
       <span class="text-sky-400">"column"</span>: <span class="text-emerald-400">"prswtusg"</span>,
+      <span class="text-sky-400">"year_month"</span>: <span class="text-emerald-400">"256908"</span>,
       <span class="text-sky-400">"usage"</span>: {
         <span class="text-sky-400">"total"</span>: <span class="text-amber-300">37260</span>,
         <span class="text-sky-400">"house"</span>: <span class="text-amber-300">27713</span>,

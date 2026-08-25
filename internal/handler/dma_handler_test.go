@@ -117,7 +117,7 @@ func TestGetStatsRegionRejectsInvalidColumn(t *testing.T) {
 	h := NewDMAHandler(nil)
 	app.Get("/api/dma/stats-region", h.GetStatsRegion)
 
-	req := httptest.NewRequest("GET", "/api/dma/stats-region?region=9&column=lstwtusg2", nil)
+	req := httptest.NewRequest("GET", "/api/dma/stats-region?region=9&column=lstwtusg13", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("app.Test returned error: %v", err)

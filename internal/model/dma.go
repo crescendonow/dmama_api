@@ -73,6 +73,7 @@ type DMAStats struct {
 	PwaCode    string             `json:"pwa_code"`
 	DmaID      string             `json:"dma_id"`
 	Column     string             `json:"column"`
+	YearMonth  string             `json:"year_month"`
 	Usage      DMAUsage           `json:"usage"`
 	Population DMAPopulationStats `json:"population"`
 }

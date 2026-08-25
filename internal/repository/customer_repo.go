@@ -40,7 +40,10 @@ func ValidateColumn(col string) error {
 // ValidateStatsRegionColumn restricts the stats-region endpoint to its public contract.
 func ValidateStatsRegionColumn(col string) error {
 	switch col {
-	case "prswtusg", "lstwtusg1":
+	case "prswtusg",
+		"lstwtusg1", "lstwtusg2", "lstwtusg3", "lstwtusg4",
+		"lstwtusg5", "lstwtusg6", "lstwtusg7", "lstwtusg8",
+		"lstwtusg9", "lstwtusg10", "lstwtusg11", "lstwtusg12":
 		return nil
 	default:
 		return fmt.Errorf("invalid stats-region column: %s", col)

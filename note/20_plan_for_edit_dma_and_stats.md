@@ -1,46 +1,64 @@
-# Plan: Filter DMA region stats and bulk-create feature collections
+# Plan: add `year_month` to DMA stats responses
 
-Source: `note/19_requirement_edit_dma_insert_stats_region_20260813.md`
+## Source
 
-## Scope and public contract
+- Requirement: `note/19_requirement_edit_dma_insert_stats_region_20260825.md`
+- Confirmed on 2026-08-25:
+  - Change the billing cutoff from day 20 to day 15.
+  - On days 1-15, `prswtusg` represents the previous calendar month.
+  - On days 16 through month end, `prswtusg` represents the current calendar month.
+  - Expand `/api/dma/stats-region` to accept `lstwtusg1` through `lstwtusg12`.
+  - Keep legacy `/api/dma/stats` columns (`use_water`, `use_jan` through `use_dec`) for backward compatibility and return `year_month: ""` for them.
 
-### `GET /api/dma/stats-region`
+## Public behavior
 
-- Keep `region` required (`1..10`) and keep the existing `column` contract (`prswtusg` or `lstwtusg1`, default `prswtusg`).
-- Add optional query parameter `pwa_code`.
-- Without `pwa_code`, preserve the current result: every DMA whose `pwa_code` belongs to the requested region.
-- With `pwa_code`, query the same region customer table but return only DMA rows whose `dma.pwa_code` exactly equals the supplied value (for example `5531011`).
-- Preserve the response envelope `{success, data, count}` and the existing usage/population formulas.
+Add `year_month` to every item returned by:
 
-### `POST /api/features/:shape/:pwaCode`
+- `GET /api/dma/stats`
+- `GET /api/dma/stats-region`
 
-- Keep the current `step_test` FeatureCollection contract.
-- Allow `dma_boundary` and `flow_meter` create requests to use a GeoJSON `FeatureCollection` as well.
-- Preserve backward compatibility: `dma_boundary` and `flow_meter` continue to accept the existing single-feature request body.
-- A collection must have `type: "FeatureCollection"`, at least one member, and every member must have `type: "Feature"` plus the existing `geometry`, `properties`, and optional `dma_id` fields.
-- Keep the client `id` handling shape-specific: `step_test` still requires a non-empty `id` and maps it to `properties.stepName`; `dma_boundary` and `flow_meter` do not use the client `id` as the stored MongoDB identity.
-- Validate the entire collection before the first insert using each shape's existing rules. Check overlap between members for polygon shapes (`dma_boundary` and `step_test`); `flow_meter` retains its point/within-DMA rules.
-- On success, insert members in request order and return HTTP 201 with a GeoJSON `FeatureCollection` and `count`.
-- If parsing or preflight validation fails, insert nothing. If persistence fails after earlier members succeeded, stop at the failing index and keep the existing non-transactional partial-write behavior.
+`year_month` is a six-character Buddhist Era value in `YYYYMM` format. Month values are zero-padded.
 
-## Implementation seams
+For a request evaluated on 2026-08-25:
 
-1. Thread optional `pwa_code` from the DMA handler through `DMAService.GetStatsRegion` to the customer repository.
-2. Extend the stats-region query builder to select either the region-prefix predicate or an exact `pwa_code` predicate while retaining parameter binding and the existing column allowlist.
-3. Generalize the FeatureCollection parser/orchestrator and collection validator around a `shape` argument instead of duplicating the `step_test` path. Keep the public HTTP route unchanged.
-4. Update API documentation/examples that describe these request parameters and bodies.
+| Column | `year_month` |
+|---|---|
+| `prswtusg` | `256908` |
+| `lstwtusg1` | `256907` |
+| `lstwtusg2` | `256906` |
+| `lstwtusg12` | `256808` |
 
-## TDD sequence
+For a request evaluated on 2026-08-15, `prswtusg` is `256907`; on 2026-08-16 it is `256908`.
 
-1. RED -> GREEN: repository/query test proves no `pwa_code` keeps the region-prefix filter.
-2. RED -> GREEN: repository/query test proves supplied `pwa_code` uses an exact bound predicate; handler test covers forwarding and input acceptance through the HTTP interface where practical.
-3. RED -> GREEN: HTTP create test for a two-member `dma_boundary` FeatureCollection, including ordered calls and FeatureCollection/count response.
-4. RED -> GREEN: HTTP create test for a two-member `flow_meter` FeatureCollection.
-5. RED -> GREEN: malformed/empty collection and collection preflight failures perform zero inserts; failing member errors include its zero-based index.
-6. Regression: `step_test` FeatureCollection mapping and legacy single-feature creates for `dma_boundary`/`flow_meter` remain unchanged.
-7. Run `gofmt`, focused package tests after each slice, then `go vet ./...`, `go test ./...`, and `go build ./...`.
+When `/api/dma/stats` receives `year` and `month`, keep the existing Gregorian input contract and column resolution behavior. The returned `year_month` describes the resolved database column and is formatted in Buddhist Era.
 
-## Review and delivery
+## Implementation
 
-- Compare the completed work with the pre-work fixed point `3d6f786929cc6e69608bb0f276d466a2081b3f09` on separate Standards and Spec axes.
-- Preserve all pre-existing uncommitted work; stage and commit only files/hunks belonging to this requirement.
+1. Add `YearMonth string \`json:"year_month"\`` to `model.DMAStats`.
+2. Put billing-period calculation behind a service function that accepts the resolved column and a supplied `time.Time`:
+   - determine the base billing month using cutoff day 15;
+   - subtract `N` months for `lstwtusgN`;
+   - add 543 to the Gregorian year;
+   - return an empty string for the confirmed legacy columns.
+3. Change the existing `ResolveStatsColumn` cutoff from day 20 to day 15 so explicit `year`/`month` requests select the matching column.
+4. Attach the calculated `year_month` to `/api/dma/stats` without putting it in the cache key or database query.
+5. Attach the same calculated value to every `/api/dma/stats-region` result item.
+6. Expand stats-region column validation to `prswtusg` plus `lstwtusg1..12`; continue rejecting other legacy and unsafe column values.
+7. Update `template/index.html` for both endpoints: response examples, cutoff rule, output format, and the expanded stats-region allowlist.
+
+## Test-first slices
+
+1. Service tests for cutoff boundaries (day 15/day 16), zero-padded months, Buddhist year, year rollover, and offsets 1/2/12.
+2. Service tests for legacy columns returning an empty `year_month` and invalid columns returning an error.
+3. Existing explicit `year`/`month` resolution tests updated to cutoff day 15.
+4. Repository/service validation tests proving stats-region accepts `lstwtusg1..12` and rejects unsupported/unsafe columns.
+5. Response-preparation tests proving `year_month` is present and cached numeric data remains unmodified.
+6. Documentation assertions or focused text checks for both endpoint examples and cutoff wording.
+
+## Verification
+
+- Run `gofmt` on changed Go files.
+- Run focused package tests after each RED/GREEN slice.
+- Run `go test ./...` once all changes are complete.
+- Review the final diff against this plan and the source requirement.
+- Commit only files belonging to this requirement; preserve unrelated worktree changes.

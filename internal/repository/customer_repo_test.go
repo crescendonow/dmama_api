@@ -29,6 +29,30 @@ func TestValidateColumnRejectsUnsafeColumn(t *testing.T) {
 	}
 }
 
+func TestValidateStatsRegionColumnAllowsOnlyBillingColumns(t *testing.T) {
+	allowed := []string{
+		"prswtusg",
+		"lstwtusg1", "lstwtusg2", "lstwtusg3", "lstwtusg4",
+		"lstwtusg5", "lstwtusg6", "lstwtusg7", "lstwtusg8",
+		"lstwtusg9", "lstwtusg10", "lstwtusg11", "lstwtusg12",
+	}
+	for _, column := range allowed {
+		t.Run("allows_"+column, func(t *testing.T) {
+			if err := ValidateStatsRegionColumn(column); err != nil {
+				t.Fatalf("expected %s to be allowed: %v", column, err)
+			}
+		})
+	}
+
+	for _, column := range []string{"use_jan", "lstwtusg13", "prswtusg;drop table"} {
+		t.Run("rejects_"+column, func(t *testing.T) {
+			if err := ValidateStatsRegionColumn(column); err == nil {
+				t.Fatalf("expected %s to be rejected", column)
+			}
+		})
+	}
+}
+
 func TestDMACustomersQueryUsesRegionTable(t *testing.T) {
 	query := dmaCustomersQuery(8)
 
