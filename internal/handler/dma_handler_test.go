@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"context"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"dmama_api/internal/model"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -139,4 +143,36 @@ func TestGetStatsRegionRejectsPWACodeFromAnotherRegion(t *testing.T) {
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", resp.StatusCode)
 	}
+}
+
+func TestGetStatsRegionForwardsOptionalPWACode(t *testing.T) {
+	app := fiber.New()
+	recorder := &recordingStatsRegionService{}
+	h := &DMAHandler{statsRegion: recorder}
+	app.Get("/api/dma/stats-region", h.GetStatsRegion)
+
+	req := httptest.NewRequest("GET", "/api/dma/stats-region?region=1&column=prswtusg&pwa_code=5531011", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test returned error: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	if recorder.region != 1 || recorder.column != "prswtusg" || recorder.pwaCode != "5531011" {
+		t.Fatalf("forwarded region/column/pwa_code = %d/%q/%q", recorder.region, recorder.column, recorder.pwaCode)
+	}
+}
+
+type recordingStatsRegionService struct {
+	region  int
+	column  string
+	pwaCode string
+}
+
+func (r *recordingStatsRegionService) GetStatsRegion(_ context.Context, region int, column, pwaCode string, _ time.Time) ([]model.DMAStats, error) {
+	r.region = region
+	r.column = column
+	r.pwaCode = pwaCode
+	return []model.DMAStats{{PwaCode: pwaCode, Column: column}}, nil
 }

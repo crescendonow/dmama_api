@@ -1200,6 +1200,39 @@ res = requests.get(
           <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/features/:shape/:pwaCode</code>
         </div>
         <p class="text-slate-600 dark:text-slate-300 mb-4">All three shapes accept a GeoJSON <code class="text-xs">FeatureCollection</code> for create and preflight every member before the first insert. Polygon collections (<code class="text-xs">dma_boundary</code> and <code class="text-xs">step_test</code>) also check overlap between members. <code class="text-xs">dma_boundary</code> and <code class="text-xs">flow_meter</code> remain backward compatible with the existing single-feature body.</p>
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">FeatureCollection request examples</h4>
+        <div class="grid md:grid-cols-2 gap-4 mb-4">
+          <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>dma_boundary FeatureCollection</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+            <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[99.01, 18.80], [99.02, 18.80], [99.02, 18.81], [99.01, 18.81], [99.01, 18.80]]] },
+      "properties": { "dmaNo": "DMA99-A", "dmaName": "DMA A" },
+      "dma_id": 0
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[99.03, 18.80], [99.04, 18.80], [99.04, 18.81], [99.03, 18.81], [99.03, 18.80]]] },
+      "properties": { "dmaNo": "DMA99-B", "dmaName": "DMA B" },
+      "dma_id": 0
+    }
+  ]
+}</code></pre>
+          </div>
+          <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>flow_meter FeatureCollection</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+            <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [99.0007, 18.7957] }, "properties": { "remark": "inlet" } },
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [99.0010, 18.7960] }, "properties": { "remark": "outlet" } }
+  ]
+}</code></pre>
+          </div>
+        </div>
         <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Request Body (dma_boundary single Feature; FeatureCollection also accepted)</h4>
         <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>

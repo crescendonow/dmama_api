@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,11 @@ type DMAHandler struct {
 	customerRepo *repository.CustomerRepo
 	pipeRepo     *repository.PipeRepo
 	leakRepo     *repository.LeakpointRepo
+	statsRegion  dmaStatsRegionGetter
+}
+
+type dmaStatsRegionGetter interface {
+	GetStatsRegion(context.Context, int, string, string, time.Time) ([]model.DMAStats, error)
 }
 
 func NewDMAHandler(pool *pgxpool.Pool) *DMAHandler {
@@ -27,12 +33,14 @@ func NewDMAHandler(pool *pgxpool.Pool) *DMAHandler {
 	meterRepo := repository.NewMeterRepo(pool)
 	pipeRepo := repository.NewPipeRepo(pool)
 	leakRepo := repository.NewLeakpointRepo(pool)
+	dmaService := service.NewDMAService(dmaRepo, customerRepo, meterRepo, pipeRepo, leakRepo)
 	return &DMAHandler{
 		dmaRepo:      dmaRepo,
-		dmaService:   service.NewDMAService(dmaRepo, customerRepo, meterRepo, pipeRepo, leakRepo),
+		dmaService:   dmaService,
 		customerRepo: customerRepo,
 		pipeRepo:     pipeRepo,
 		leakRepo:     leakRepo,
+		statsRegion:  dmaService,
 	}
 }
 
@@ -206,7 +214,7 @@ func (h *DMAHandler) GetStatsRegion(c *fiber.Ctx) error {
 	}
 
 	now := time.Now()
-	result, err := h.dmaService.GetStatsRegion(c.Context(), region, column, pwaCode, now)
+	result, err := h.statsRegion.GetStatsRegion(c.Context(), region, column, pwaCode, now)
 	if err != nil {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}
