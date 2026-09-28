@@ -11,7 +11,7 @@ import (
 
 func TestSetupRegistersMonitorUsageUnavailableWhenGISPoolMissing(t *testing.T) {
 	app := fiber.New()
-	Setup(app, nil, nil, nil, nil, nil, false, &config.Config{})
+	Setup(app, nil, nil, nil, nil, nil, nil, &config.Config{})
 
 	req := httptest.NewRequest("GET", "/api/monitor/usage", nil)
 	resp, err := app.Test(req)

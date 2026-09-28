@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"dmama_api/internal/config"
 	"dmama_api/internal/database"
+	"dmama_api/internal/handler"
 	"dmama_api/internal/middleware"
 	"dmama_api/internal/repository"
 	"dmama_api/internal/router"
@@ -41,17 +43,18 @@ func main() {
 	featureDB, usersDB := connectMongo(ctx, cfg)
 
 	// Feature CRUD needs both backends AND the dmama_layer schema/tables to exist. EnsureSchema is
-	// best-effort here: if it fails (app role lacks DDL, PostGIS missing, etc.) we log loudly and
-	// leave featureReady false so the routes return a clear 503 instead of a per-request 42P01.
-	featureReady := false
+	// best-effort here (dev convenience + a fast boot-log signal) but gates nothing: the readiness
+	// gate below probes read-only per request instead, so a fix (e.g. running the migration) takes
+	// effect without a restart.
+	var topoRepo *repository.TopologyRepo
 	if gisPool != nil {
-		if err := repository.NewTopologyRepo(gisPool).EnsureSchema(ctx); err != nil {
-			log.Printf("WARN: dmama_layer schema not ready; feature CRUD disabled "+
+		topoRepo = repository.NewTopologyRepo(gisPool)
+		if err := topoRepo.EnsureSchema(ctx); err != nil {
+			log.Printf("WARN: dmama_layer schema not ready at boot; feature CRUD will retry per request "+
 				"(run migrations/0001_dmama_layer.sql): %v", err)
-		} else if featureDB != nil {
-			featureReady = true
 		}
 	}
+	gate := handler.NewFeatureGate(topoRepo, featureDB, 30*time.Second)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -67,15 +70,15 @@ func main() {
 	})
 
 	middleware.Setup(app, cfg)
-	router.Setup(app, pool, gisPool, featureDB, usersDB, usageRec, featureReady, cfg)
+	router.Setup(app, pool, gisPool, featureDB, usersDB, usageRec, gate, cfg)
 
 	log.Printf("Server starting on port %s", cfg.Port)
 	log.Fatal(app.Listen(":" + cfg.Port))
 }
 
 // connectGIS opens the PostgreSQL 16 pool. Returns nil (with a warning) when GISDATA_URL is unset
-// or the database is unreachable. The dmama_layer schema is ensured by the caller so its result can
-// gate feature route registration.
+// or the database is unreachable; the caller passes a nil pool into the feature readiness gate so
+// it reports the leg as unconfigured instead of erroring on every probe.
 func connectGIS(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 	if cfg.GISDataURL == "" {
 		log.Printf("WARN: GISDATA_URL not set; feature CRUD + usage logging disabled")

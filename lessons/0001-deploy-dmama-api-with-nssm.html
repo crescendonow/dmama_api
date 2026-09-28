@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deploy dmama_api ด้วย NSSM</title><link rel="stylesheet" href="../assets/lesson.css"></head>
+<body><main>
+<h1>Deploy dmama_api ด้วย NSSM</h1>
+<p class="lead">เป้าหมาย: ให้ Go API รันเป็น Windows Service, start หลัง reboot, มี log, health check และ rollback ได้</p>
+
+<div class="card warn"><strong>จุดสำคัญที่สุด:</strong> ตั้ง <code>AppDirectory=C:\Services\dmama_api</code> เพราะแอปอ่าน <code>.env</code> และเสิร์ฟไฟล์จาก <code>template\</code> โดยอิง working directory</div>
+
+<h2>1. สร้าง release package</h2>
+<p>ใช้ source จาก commit/tag ที่ต้องการ deploy และควรให้ <code>git status --porcelain</code> ว่างก่อน build. โปรเจกต์กำหนด Go 1.25 ใน <code>go.mod</code>.</p>
+<pre><code>go version
+go test ./...
+$env:CGO_ENABLED = '0'
+$env:GOOS = 'windows'
+$env:GOARCH = 'amd64'
+New-Item -ItemType Directory -Force .\dist | Out-Null
+go build -trimpath -ldflags="-s -w" -o .\dist\dmama_api.exe .\cmd\server</code></pre>
+<p>นำไฟล์ต่อไปนี้ไป server: <code>dmama_api.exe</code>, <code>template\</code>, <code>migrations\</code> และสร้าง <code>.env</code> จาก <code>.env.example</code>. ไม่ต้องนำ Go source ไป production ถ้าไม่ต้อง build บน server.</p>
+
+<h2>2. จัดโฟลเดอร์บน server</h2>
+<pre><code>C:\Services\dmama_api\
+  dmama_api.exe
+  .env
+  template\
+  migrations\
+  logs\</code></pre>
+<p>ค่าที่ต้องตรวจใน <code>.env</code>:</p>
+<table><tr><th>ตัวแปร</th><th>ความหมาย</th></tr>
+<tr><td><code>DATABASE_URL</code></td><td>จำเป็น — PostgreSQL หลัก; ว่างหรือเชื่อมไม่ได้ทำให้ service ออกทันที</td></tr>
+<tr><td><code>GISDATA_URL</code></td><td>PostgreSQL 16 สำหรับ feature topology และ usage log; ว่างแล้ว API หลักยังรัน แต่ feature/usage ถูกปิด</td></tr>
+<tr><td><code>MONGO_URI</code></td><td>Vallaris/MongoDB; ว่างแล้ว feature CRUD ถูกปิด</td></tr>
+<tr><td><code>PORT</code></td><td>ค่าเริ่มต้น <code>5013</code></td></tr>
+<tr><td><code>DMAMA_KEY</code></td><td>API key production; endpoint health ไม่ต้องใช้ key</td></tr></table>
+
+<h2>3. เตรียม database</h2>
+<p>ให้ DBA รัน <code>migrations\0001_dmama_layer.sql</code> และ <code>0002_auth_logs_dmama_use.sql</code> กับฐานที่ระบุใน <code>GISDATA_URL</code> พร้อม <code>ON_ERROR_STOP</code>. App role ต้องมีสิทธิ์ใช้งาน schema/table ที่ migration สร้าง.</p>
+
+<h2>4. ติดตั้ง NSSM service</h2>
+<p>ดาวน์โหลด NSSM x64 จากแหล่งทางการ วางใน path คงที่ และอย่าย้าย <code>nssm.exe</code> หลัง install. เปิด PowerShell แบบ Administrator:</p>
+<pre><code>$Service = 'dmama_api'
+$Root    = 'C:\Services\dmama_api'
+$Nssm    = 'C:\nssm-2.24\nssm-2.24\win64\nssm.exe'
+$Exe     = Join-Path $Root 'dmama_api.exe'
+$Log     = Join-Path $Root 'logs\service.log'
+
+New-Item -ItemType Directory -Force (Join-Path $Root 'logs') | Out-Null
+&amp; $Nssm install $Service $Exe
+&amp; $Nssm set $Service AppDirectory $Root
+&amp; $Nssm set $Service DisplayName 'DMAMA API'
+&amp; $Nssm set $Service Description 'DMAMA Fiber API'
+&amp; $Nssm set $Service Start SERVICE_DELAYED_AUTO_START
+&amp; $Nssm set $Service AppStdout $Log
+&amp; $Nssm set $Service AppStderr $Log
+&amp; $Nssm set $Service AppStdoutCreationDisposition 4
+&amp; $Nssm set $Service AppStderrCreationDisposition 4
+&amp; $Nssm set $Service AppRotateFiles 1
+&amp; $Nssm set $Service AppRotateOnline 0
+&amp; $Nssm set $Service AppRotateBytes 10485760
+&amp; $Nssm set $Service AppRestartDelay 5000</code></pre>
+
+<h2>5. ใช้ service identity ที่จำกัดสิทธิ์</h2>
+<p>สำหรับ server เดี่ยว ใช้ virtual account ที่ Windows จัดการ password ให้:</p>
+<pre><code>&amp; $Nssm set $Service ObjectName "NT SERVICE\$Service"
+icacls $Root /grant "NT SERVICE\${Service}:(OI)(CI)RX"
+icacls (Join-Path $Root 'logs') /grant "NT SERVICE\${Service}:(OI)(CI)M"</code></pre>
+<p>ถ้าต้อง authenticate ไป network resource ด้วย domain identity ให้ใช้ gMSA/domain service account ตามนโยบายองค์กรแทน. จำกัดสิทธิ์อ่าน <code>.env</code> ให้ Administrators, SYSTEM และ service identity เท่านั้น.</p>
+
+<h2>6. Start และตรวจรับ</h2>
+<pre><code>&amp; $Nssm start $Service
+Get-Service $Service
+Invoke-RestMethod 'http://127.0.0.1:5013/api/health'
+Get-Content $Log -Tail 100</code></pre>
+<div class="card ok">ผล health ที่ถูกต้องคือ response success และ <code>data.status = "ok"</code>. จากนั้นตรวจ <code>/api/monitor/readiness</code> พร้อม <code>X-API-Key</code> เพื่อดู PostgreSQL 16, MongoDB และ <code>dmama_layer</code>.</div>
+
+<h2>7. Firewall / reverse proxy</h2>
+<p>แนะนำให้ nginx/IIS อยู่เครื่องเดียวกันและเรียก <code>127.0.0.1:5013</code> โดยไม่เปิด port 5013 ออก network. หากจำเป็นต้องเข้าตรง ให้จำกัด source subnet:</p>
+<pre><code>New-NetFirewallRule -DisplayName 'DMAMA API 5013' -Direction Inbound `
+  -Action Allow -Protocol TCP -LocalPort 5013 -RemoteAddress '10.250.0.0/16'</code></pre>
+
+<h2>8. อัปเดตและ rollback</h2>
+<pre><code>&amp; $Nssm stop $Service
+Copy-Item $Exe "$Exe.bak" -Force
+Copy-Item 'C:\Staging\dmama_api.exe' $Exe -Force
+&amp; $Nssm start $Service
+Invoke-RestMethod 'http://127.0.0.1:5013/api/health'</code></pre>
+<p>ถ้า health ไม่ผ่าน: stop, นำ <code>.bak</code> กลับ, start และอ่าน log. การเปลี่ยน schema ต้องมีแผน rollback แยกจาก binary.</p>
+
+<h2>แบบฝึกตรวจรับ</h2>
+<ol><li>หยุด service แล้ว start ใหม่ จากนั้น health ต้องกลับมา.</li><li>reboot server ใน maintenance window แล้ว service ต้องเป็น Running.</li><li>เปลี่ยน URL ฐานทดสอบให้ผิดชั่วคราวใน non-production และอ่านสาเหตุจาก log.</li><li>ซ้อม rollback binary หนึ่งครั้งก่อน production cutover.</li></ol>
+
+<p><a href="../reference/nssm-deploy-cheat-sheet.html">เปิด cheat sheet</a> · <a href="https://www.nssm.cc/usage">NSSM official usage</a> · <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-service-accounts">Microsoft service accounts</a></p>
+<p>หากขั้นตอนไหนไม่ชัด ให้ถามต่อพร้อม path ติดตั้งจริง, port, reverse proxy และชื่อ service account ที่องค์กรอนุมัติ.</p>
+</main></body></html>

@@ -182,4 +182,224 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 100);
     }
   }
+
+  // ============ Customers-all Playground ============
+  // See note/22_plan_for_customers_endpoint.md ("Playground" row): only this endpoint gets an
+  // interactive playground, because it streams. The API key lives only in the ca-api-key input's
+  // in-memory value -- never written to the URL, a query string, or localStorage -- and is lost on
+  // refresh. Requests use a URL relative to this docs page (../api/dma/customers-all) so it works
+  // both at /docs/ and behind nginx at /dmama_api/docs/.
+  (function () {
+    var form = document.getElementById('customers-all-form');
+    if (!form) return; // only present on index.html
+
+    var apiKeyInput = document.getElementById('ca-api-key');
+    var regionInput = document.getElementById('ca-region');
+    var pwaCodeInput = document.getElementById('ca-pwa-code');
+    var dmaIdInput = document.getElementById('ca-dma-id');
+    var usetypeInput = document.getElementById('ca-usetype');
+    var polygonInput = document.getElementById('ca-polygon');
+    var statusEl = document.getElementById('ca-status');
+    var outputEl = document.getElementById('ca-output');
+    var downloadBtn = document.getElementById('ca-download');
+
+    var PREVIEW_LIMIT_BYTES = 200 * 1024; // ~200 KB, per plan
+    var CUSTOMERS_ALL_URL = '../api/dma/customers-all';
+    var lastRequest = null; // set on submit; reused by the Download button so it matches the preview
+
+    // buildRequest turns the form fields into a plain { method, url, headers, body } request
+    // description. A non-empty my_polygon means POST with every filter in the JSON body; an empty
+    // one means GET with the filters as query params (see the plan's parameter hierarchy).
+    function buildRequest() {
+      var params = new URLSearchParams();
+      var addParam = function (name, value) {
+        var trimmed = (value || '').trim();
+        if (trimmed) params.append(name, trimmed);
+      };
+      addParam('region', regionInput.value);
+      addParam('pwa_code', pwaCodeInput.value);
+      addParam('dma_id', dmaIdInput.value);
+      addParam('usetype', usetypeInput.value);
+
+      var polygonText = (polygonInput.value || '').trim();
+      if (!polygonText) {
+        var query = params.toString();
+        return {
+          method: 'GET',
+          url: CUSTOMERS_ALL_URL + (query ? '?' + query : ''),
+          headers: { 'X-API-Key': apiKeyInput.value }
+        };
+      }
+
+      var body = {};
+      if (regionInput.value.trim()) body.region = parseInt(regionInput.value, 10);
+      if (pwaCodeInput.value.trim()) body.pwa_code = pwaCodeInput.value.trim();
+      if (dmaIdInput.value.trim()) {
+        body.dma_id = dmaIdInput.value.split(',')
+          .map(function (part) { return parseInt(part.trim(), 10); })
+          .filter(function (n) { return !isNaN(n); });
+      }
+      if (usetypeInput.value.trim()) {
+        body.usetype = usetypeInput.value.split(',')
+          .map(function (part) { return part.trim(); })
+          .filter(Boolean);
+      }
+      try {
+        body.my_polygon = JSON.parse(polygonText);
+      } catch (parseError) {
+        throw new Error('my_polygon ต้องเป็น GeoJSON ที่ valid: ' + parseError.message);
+      }
+      return {
+        method: 'POST',
+        url: CUSTOMERS_ALL_URL,
+        headers: { 'X-API-Key': apiKeyInput.value, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      };
+    }
+
+    function fetchRequest(req) {
+      return fetch(req.url, { method: req.method, headers: req.headers, body: req.body, cache: 'no-store' });
+    }
+
+    // runPreview streams the response via response.body.getReader(), showing at most ~200 KB, then
+    // aborts (AbortController) so the browser and server both stop early instead of buffering (or
+    // sending) a possibly multi-GB body just for a preview.
+    function runPreview(req) {
+      var controller = new AbortController();
+      return fetch(req.url, {
+        method: req.method,
+        headers: req.headers,
+        body: req.body,
+        cache: 'no-store',
+        signal: controller.signal
+      }).then(function (response) {
+        statusEl.textContent = 'HTTP ' + response.status;
+        if (!response.ok) {
+          return response.text().then(function (text) {
+            outputEl.textContent = text || ('(no body, HTTP ' + response.status + ')');
+          });
+        }
+        if (!response.body || !response.body.getReader) {
+          return response.text().then(function (text) {
+            var truncated = text.length > PREVIEW_LIMIT_BYTES;
+            outputEl.textContent = text.slice(0, PREVIEW_LIMIT_BYTES) +
+              (truncated ? '\n\n… (พรีวิวถูกตัดที่ ~200 KB — ใช้ปุ่ม "Download full result" เพื่อดูทั้งหมด)' : '');
+          });
+        }
+
+        var reader = response.body.getReader();
+        var decoder = new TextDecoder();
+        var received = 0;
+        var text = '';
+
+        function pump() {
+          return reader.read().then(function (result) {
+            if (result.done) {
+              outputEl.textContent = text;
+              return;
+            }
+            text += decoder.decode(result.value, { stream: true });
+            received += result.value.length;
+            if (received >= PREVIEW_LIMIT_BYTES) {
+              outputEl.textContent = text + '\n\n… (พรีวิวถูกตัดที่ ~200 KB — ใช้ปุ่ม "Download full result" เพื่อดูทั้งหมด)';
+              controller.abort();
+              return reader.cancel().catch(function () { /* already aborted */ });
+            }
+            return pump();
+          });
+        }
+        return pump();
+      }).catch(function (err) {
+        if (err && err.name === 'AbortError') return; // expected: preview limit reached
+        statusEl.textContent = 'เรียก API ไม่สำเร็จ';
+        outputEl.textContent = err instanceof Error ? err.message : String(err);
+      });
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      statusEl.textContent = 'กำลังโหลด…';
+      outputEl.textContent = '';
+      var req;
+      try {
+        req = buildRequest();
+      } catch (buildError) {
+        statusEl.textContent = 'พารามิเตอร์ไม่ถูกต้อง';
+        outputEl.textContent = buildError.message;
+        return;
+      }
+      lastRequest = req;
+      runPreview(req);
+    });
+
+    downloadBtn?.addEventListener('click', function () {
+      var req;
+      try {
+        req = lastRequest || buildRequest();
+      } catch (buildError) {
+        statusEl.textContent = 'พารามิเตอร์ไม่ถูกต้อง';
+        outputEl.textContent = buildError.message;
+        return;
+      }
+      statusEl.textContent = 'กำลังดาวน์โหลด…';
+
+      if (window.showSaveFilePicker) {
+        // Pipe the response body straight to disk: memory stays flat even for the "all regions,
+        // no filters" case (5,000,000+ rows).
+        window.showSaveFilePicker({ suggestedName: 'customers-all.json' })
+          .then(function (handle) {
+            return handle.createWritable().then(function (writable) {
+              return fetchRequest(req).then(function (response) {
+                if (!response.ok || !response.body) {
+                  return response.text().then(function (text) {
+                    throw new Error(text || ('HTTP ' + response.status));
+                  });
+                }
+                return response.body.pipeTo(writable);
+              });
+            });
+          })
+          .then(function () {
+            statusEl.textContent = 'บันทึกไฟล์เรียบร้อย';
+          })
+          .catch(function (err) {
+            if (err && err.name === 'AbortError') {
+              statusEl.textContent = 'ยกเลิกการบันทึก';
+              return;
+            }
+            statusEl.textContent = 'ดาวน์โหลดไม่สำเร็จ';
+            outputEl.textContent = err instanceof Error ? err.message : String(err);
+          });
+        return;
+      }
+
+      // Fallback for browsers without showSaveFilePicker (e.g. Firefox/Safari): buffer the whole
+      // response as a Blob, then trigger a normal download. Note in the UI: very large results
+      // (no filters = all regions) need the Chromium path above or curl -N instead.
+      fetchRequest(req)
+        .then(function (response) {
+          if (!response.ok) {
+            return response.text().then(function (text) {
+              throw new Error(text || ('HTTP ' + response.status));
+            });
+          }
+          return response.blob();
+        })
+        .then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var link = document.createElement('a');
+          link.href = url;
+          link.download = 'customers-all.json';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          statusEl.textContent = 'บันทึกไฟล์เรียบร้อย';
+        })
+        .catch(function (err) {
+          statusEl.textContent = 'ดาวน์โหลดไม่สำเร็จ (ไฟล์ใหญ่มากอาจต้องใช้เบราว์เซอร์ที่รองรับ showSaveFilePicker หรือ curl -N แทน)';
+          outputEl.textContent = err instanceof Error ? err.message : String(err);
+        });
+    });
+  })();
 });

@@ -9,7 +9,7 @@ import (
 
 func NewPool(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
 	if connStr == "" {
-		return nil, fmt.Errorf("DATABASE_URL is required")
+		return nil, fmt.Errorf("database connection string is required")
 	}
 
 	config, err := pgxpool.ParseConfig(connStr)

@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB, usersDB *mongo.Database, usageRec *repository.UsageRecorder, featureReady bool, cfg *config.Config) {
+func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB, usersDB *mongo.Database, usageRec *repository.UsageRecorder, gate *handler.FeatureGate, cfg *config.Config) {
 	// API documentation
 	templateDir := resolveTemplateDir()
 	sendDocsIndex := func(c *fiber.Ctx) error {
@@ -55,6 +55,10 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB,
 		api.Get("/monitor/usage", handler.MonitorUnavailable)
 	}
 
+	// Feature-CRUD readiness detail, registered here for the same reason as monitor/usage above:
+	// after APIKeyAuth, before UsageLogger, so dashboard polling doesn't log itself.
+	api.Get("/monitor/readiness", gate.Readiness)
+
 	// Usage/credit logging for every authenticated /api request (health above is excluded).
 	if usageRec != nil {
 		api.Use(middleware.UsageLogger(usageRec))
@@ -79,6 +83,8 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB,
 	api.Get("/dma/pipe-length", dmaH.GetPipeLength)
 	api.Get("/dma/map", dmaH.GetMapData)
 	api.Get("/dma/customers", dmaH.GetCustomers)
+	api.Get("/dma/customers-all", dmaH.GetCustomersAll)
+	api.Post("/dma/customers-all", dmaH.PostCustomersAll)
 	api.Get("/dma/usage-v2", dmaH.GetUsageV2)
 	api.Get("/dma/leakpoints-by-size", dmaH.LeakpointsBySize)
 	api.Get("/dma/pipe-length-clipped", dmaH.PipeLengthClipped)
@@ -98,22 +104,20 @@ func Setup(app *fiber.App, pool *pgxpool.Pool, gisPool *pgxpool.Pool, featureDB,
 
 	// Feature endpoints — CRUD for drawn dma_boundary/flow_meter/step_test.
 	// Storage: Vallaris MongoDB; topology validation + mirror: PostgreSQL 16 (dmama_layer).
-	// Registered only when both backends are up AND the dmama_layer schema is ready
-	// (featureReady, computed in cmd/server/main.go).
-	if featureReady {
-		featureH := handler.NewFeatureHandler(gisPool, featureDB, usersDB, cfg.SystemUser, cfg.UserDomain)
-		api.Post("/features/:shape/:pwaCode/validate", featureH.Validate)
-		api.Post("/features/:shape/:pwaCode/sync", featureH.Sync)
-		api.Post("/features/:shape/:pwaCode", featureH.Create)
-		api.Get("/features/:shape/:pwaCode", featureH.List)
-		api.Get("/features/:shape/:pwaCode/:id", featureH.Get)
-		api.Put("/features/:shape/:pwaCode/:id", featureH.Update)
-		api.Delete("/features/:shape/:pwaCode/:id", featureH.Delete)
-	} else {
-		// Backends not configured: still register the routes so requests get an explicit 503
-		// instead of Fiber's misleading "Cannot POST" 404.
-		api.All("/features/*", handler.FeatureUnavailable)
-	}
+	// gate.Middleware() probes readiness per request (not just once at boot), so a backend that
+	// comes back — or a migration that gets run — recovers feature CRUD without a restart.
+	// Attached per route rather than a group Use so an unmapped verb (e.g. PATCH) gets Fiber's own
+	// 405 instead of a 503 implying the whole feature backend (or a PATCH route) exists. The
+	// handler itself is safe to build even with nil gisPool/featureDB/usersDB: the gate
+	// short-circuits before any of them are touched.
+	featureH := handler.NewFeatureHandler(gisPool, featureDB, usersDB, cfg.SystemUser, cfg.UserDomain)
+	api.Post("/features/:shape/:pwaCode/validate", gate.Middleware(), featureH.Validate)
+	api.Post("/features/:shape/:pwaCode/sync", gate.Middleware(), featureH.Sync)
+	api.Post("/features/:shape/:pwaCode", gate.Middleware(), featureH.Create)
+	api.Get("/features/:shape/:pwaCode", gate.Middleware(), featureH.List)
+	api.Get("/features/:shape/:pwaCode/:id", gate.Middleware(), featureH.Get)
+	api.Put("/features/:shape/:pwaCode/:id", gate.Middleware(), featureH.Update)
+	api.Delete("/features/:shape/:pwaCode/:id", gate.Middleware(), featureH.Delete)
 }
 func resolveTemplateDir() string {
 	if dir, ok := findTemplateDirFromWorkingDir(); ok {

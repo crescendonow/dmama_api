@@ -112,6 +112,66 @@ func assertStepTestPostmanBody(t *testing.T, name, raw string) {
 	}
 }
 
+func TestPostmanCollectionHasCustomersAllEndpoints(t *testing.T) {
+	path := filepath.Join("..", "..", "note", "dmama_api.postman_collection.json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read postman collection: %v", err)
+	}
+
+	var collection struct {
+		Item []postmanItem `json:"item"`
+	}
+	if err := json.Unmarshal(raw, &collection); err != nil {
+		t.Fatalf("postman collection must be valid JSON: %v", err)
+	}
+
+	expectedMethods := map[string]string{
+		"dma - customers-all (all regions)": "GET",
+		"dma - customers-all (region)":      "GET",
+		"dma - customers-all (branch)":      "GET",
+		"dma - customers-all (dma ids)":     "GET",
+		"dma - customers-all (polygon)":     "POST",
+	}
+	seen := map[string]postmanItem{}
+	for _, item := range collection.Item {
+		if _, ok := expectedMethods[item.Name]; ok {
+			seen[item.Name] = item
+		}
+	}
+	if len(seen) != len(expectedMethods) {
+		t.Fatalf("found %d customers-all items, want %d (seen: %#v)", len(seen), len(expectedMethods), seen)
+	}
+
+	for name, method := range expectedMethods {
+		item := seen[name]
+		if item.Request.Method != method {
+			t.Fatalf("%s method = %s, want %s", name, item.Request.Method, method)
+		}
+		if !hasHeader(item, "X-API-Key") {
+			t.Fatalf("%s missing X-API-Key header", name)
+		}
+	}
+
+	polygonItem := seen["dma - customers-all (polygon)"]
+	var body struct {
+		MyPolygon struct {
+			Type string `json:"type"`
+		} `json:"my_polygon"`
+	}
+	if err := json.Unmarshal([]byte(polygonItem.Request.Body.Raw), &body); err != nil {
+		t.Fatalf("polygon item body must be JSON: %v", err)
+	}
+	if body.MyPolygon.Type != "Polygon" && body.MyPolygon.Type != "MultiPolygon" {
+		t.Fatalf("polygon item my_polygon.type = %q, want Polygon or MultiPolygon", body.MyPolygon.Type)
+	}
+
+	dmaIDsItem := seen["dma - customers-all (dma ids)"]
+	if !strings.Contains(dmaIDsItem.Request.URL.Raw, "dma_id=") {
+		t.Fatalf("dma ids item raw URL = %q, want a dma_id query param", dmaIDsItem.Request.URL.Raw)
+	}
+}
+
 func assertStepTestCollectionPostmanBody(t *testing.T, name, raw string) {
 	t.Helper()
 	var body struct {

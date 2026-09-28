@@ -3,9 +3,11 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"dmama_api/internal/model"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -420,4 +422,183 @@ func (r *CustomerRepo) CountPopulationByDMA(ctx context.Context, region int, pwa
 		return nil, err
 	}
 	return &result, nil
+}
+
+// customersAllQuery builds the SELECT for one region table of /api/dma/customers-all
+// (see note/22_plan_for_customers_endpoint.md). It returns positional arguments alongside the
+// query text; the only interpolated identifier is the table name from TableName with a region
+// that has already been validated by the caller. Every filter value is bound, never interpolated.
+//
+// Customers keep exactly one row even when several DMA boundaries overlap them: the LATERAL
+// join orders by dma_id and takes the smallest match. Customers outside every matching DMA get
+// dma_id/dma_name = NULL because the join is LEFT.
+func customersAllQuery(region int, f model.CustomersAllFilter) (string, []any) {
+	tbl := TableName("giswebm_stamp", region, "bl_customer")
+
+	var args []any
+	bind := func(v any) string {
+		args = append(args, v)
+		return fmt.Sprintf("$%d", len(args))
+	}
+
+	dmaIDFilter := ""
+	if len(f.DmaIDs) > 0 {
+		ids := make([]int32, len(f.DmaIDs))
+		for i, id := range f.DmaIDs {
+			ids[i] = int32(id)
+		}
+		dmaIDFilter = fmt.Sprintf("\n      AND b.dma_id = ANY(%s::int[])", bind(ids))
+	}
+
+	var whereClauses []string
+	if f.PwaCode != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("c.pwa_code = %s", bind(f.PwaCode)))
+	}
+	if len(f.Usetypes) > 0 {
+		whereClauses = append(whereClauses, fmt.Sprintf("c.usetype = ANY(%s::text[])", bind(f.Usetypes)))
+	}
+	if f.PolygonGeoJSON != "" {
+		placeholder := bind(f.PolygonGeoJSON)
+		whereClauses = append(whereClauses, fmt.Sprintf(
+			"c.wkb_geometry && ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)\n  AND ST_Intersects(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), c.wkb_geometry)",
+			placeholder, placeholder))
+	}
+	// dma_id only narrows which DMA is *reported*, not which customers are returned, once a
+	// polygon is present -- customers outside the selected DMAs but inside the polygon still come
+	// back, with dma_id/dma_name null (plan decision: "dma_id + my_polygon").
+	if len(f.DmaIDs) > 0 && f.PolygonGeoJSON == "" {
+		whereClauses = append(whereClauses, "d.dma_id IS NOT NULL")
+	}
+
+	where := "WHERE TRUE"
+	for _, clause := range whereClauses {
+		where += "\n  AND " + clause
+	}
+
+	lstColumns := make([]string, 12)
+	for i := 1; i <= 12; i++ {
+		lstColumns[i-1] = fmt.Sprintf("c.lstwtusg%d::float8", i)
+	}
+
+	query := fmt.Sprintf(`SELECT
+    d.dma_id::text, d.dma_name, c.pwa_code,
+    c.is_customer::text, c.custstat::text, c.meterstat::text, c.usetype::text, c.custname,
+    ST_Y(c.wkb_geometry), ST_X(c.wkb_geometry),
+    c.custaddr, c.custcode, c.meterno, c.mtrrdroute::text, c.mtrseq::text,
+    c.metermake, c.metersize,
+    c.prswtusg::float8, %s
+FROM %s c
+LEFT JOIN LATERAL (
+    SELECT b.dma_id, b.dma_name
+    FROM pwa_dma.dma_boundary b
+    WHERE b.pwa_code = c.pwa_code
+      AND b.wkb_geometry && c.wkb_geometry
+      AND ST_Intersects(b.wkb_geometry, c.wkb_geometry)%s
+    ORDER BY b.dma_id
+    LIMIT 1
+) d ON TRUE
+%s`, strings.Join(lstColumns, ", "), tbl, dmaIDFilter, where)
+
+	return query, args
+}
+
+// ValidatePolygon checks that a GeoJSON geometry parses and is a valid PostGIS geometry before
+// any streaming starts, so a bad my_polygon becomes a normal 400 JSON response.
+func (r *CustomerRepo) ValidatePolygon(ctx context.Context, geojson string) error {
+	var isValid bool
+	var reason string
+	err := r.pool.QueryRow(ctx,
+		`SELECT ST_IsValid(g), ST_IsValidReason(g) FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON($1), 4326) g) s`,
+		geojson,
+	).Scan(&isValid, &reason)
+	if err != nil {
+		return fmt.Errorf("invalid my_polygon: %v", err)
+	}
+	if !isValid {
+		return fmt.Errorf("invalid my_polygon: %s", reason)
+	}
+	return nil
+}
+
+// CustomerAllRows lazily scans one region's rows for /api/dma/customers-all. Callers must Close it.
+type CustomerAllRows struct {
+	rows pgx.Rows
+}
+
+// OpenCustomersAll opens (without reading) the customer rows for one region. Opening the first
+// region's rows before starting the HTTP response stream is what lets a DB error surface as a
+// normal 500 JSON response instead of a broken stream (see the handler).
+func (r *CustomerRepo) OpenCustomersAll(ctx context.Context, region int, filter model.CustomersAllFilter) (*CustomerAllRows, error) {
+	query, args := customersAllQuery(region, filter)
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &CustomerAllRows{rows: rows}, nil
+}
+
+// Next advances to the next row.
+func (r *CustomerAllRows) Next() bool { return r.rows.Next() }
+
+// Err returns any error encountered during iteration.
+func (r *CustomerAllRows) Err() error { return r.rows.Err() }
+
+// Close releases the underlying database rows.
+func (r *CustomerAllRows) Close() { r.rows.Close() }
+
+// Customer scans the current row into a model.DMACustomerAll.
+func (r *CustomerAllRows) Customer() (model.DMACustomerAll, error) {
+	var customer model.DMACustomerAll
+	var dmaID, dmaName, isCustomer, custstat, meterstat, usetype, custname pgtype.Text
+	var custaddr, custcode, meterno, mtrrdroute, mtrseq, metermake, metersize pgtype.Text
+	var latitude, longitude, prswtusg pgtype.Float8
+	var lst [12]pgtype.Float8
+
+	dest := []any{
+		&dmaID, &dmaName, &customer.PwaCode,
+		&isCustomer, &custstat, &meterstat, &usetype, &custname,
+		&latitude, &longitude,
+		&custaddr, &custcode, &meterno, &mtrrdroute, &mtrseq,
+		&metermake, &metersize,
+		&prswtusg,
+	}
+	for i := range lst {
+		dest = append(dest, &lst[i])
+	}
+
+	if err := r.rows.Scan(dest...); err != nil {
+		return model.DMACustomerAll{}, err
+	}
+
+	customer.DmaID = textPtr(dmaID)
+	customer.DmaName = textPtr(dmaName)
+	customer.IsCustomer = textPtr(isCustomer)
+	customer.Custstat = textPtr(custstat)
+	customer.Meterstat = textPtr(meterstat)
+	customer.Usetype = textPtr(usetype)
+	customer.Custname = textPtr(custname)
+	customer.Latitude = float8Ptr(latitude)
+	customer.Longitude = float8Ptr(longitude)
+	customer.Custaddr = textPtr(custaddr)
+	customer.Custcode = textPtr(custcode)
+	customer.Meterno = textPtr(meterno)
+	customer.Mtrrdroute = textPtr(mtrrdroute)
+	customer.Mtrseq = textPtr(mtrseq)
+	customer.Metermake = textPtr(metermake)
+	customer.Metersize = textPtr(metersize)
+	customer.Prswtusg = float8Ptr(prswtusg)
+	customer.Lstwtusg1 = float8Ptr(lst[0])
+	customer.Lstwtusg2 = float8Ptr(lst[1])
+	customer.Lstwtusg3 = float8Ptr(lst[2])
+	customer.Lstwtusg4 = float8Ptr(lst[3])
+	customer.Lstwtusg5 = float8Ptr(lst[4])
+	customer.Lstwtusg6 = float8Ptr(lst[5])
+	customer.Lstwtusg7 = float8Ptr(lst[6])
+	customer.Lstwtusg8 = float8Ptr(lst[7])
+	customer.Lstwtusg9 = float8Ptr(lst[8])
+	customer.Lstwtusg10 = float8Ptr(lst[9])
+	customer.Lstwtusg11 = float8Ptr(lst[10])
+	customer.Lstwtusg12 = float8Ptr(lst[11])
+
+	return customer, nil
 }

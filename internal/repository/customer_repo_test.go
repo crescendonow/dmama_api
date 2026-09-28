@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"dmama_api/internal/model"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/text/encoding/charmap"
 )
@@ -146,5 +148,115 @@ func TestDMAStatsRegionQueryRejectsPWACodeFromAnotherRegion(t *testing.T) {
 	_, _, err := dmaStatsRegionQuery(1, "prswtusg", "5541011")
 	if err == nil {
 		t.Fatal("expected pwa_code from region 2 to be rejected for region 1")
+	}
+}
+
+// ---- customersAllQuery ----
+
+func TestCustomersAllQueryUsesRegionTable(t *testing.T) {
+	query, _ := customersAllQuery(8, model.CustomersAllFilter{})
+	if !strings.Contains(query, "giswebm_stamp.r8_bl_customer") {
+		t.Fatalf("expected region 8 customer table, query was %s", query)
+	}
+}
+
+func TestCustomersAllQueryHasLateralJoinShape(t *testing.T) {
+	query, _ := customersAllQuery(1, model.CustomersAllFilter{})
+	required := []string{
+		"LEFT JOIN LATERAL",
+		"ORDER BY b.dma_id",
+		"LIMIT 1",
+		"FROM pwa_dma.dma_boundary b",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(query, fragment) {
+			t.Fatalf("expected query to contain %q, query was %s", fragment, query)
+		}
+	}
+}
+
+func TestCustomersAllQueryNoFiltersHasNoOptionalClauses(t *testing.T) {
+	query, args := customersAllQuery(1, model.CustomersAllFilter{})
+	if len(args) != 0 {
+		t.Fatalf("expected no bound args, got %v", args)
+	}
+	forbidden := []string{"ANY(", "d.dma_id IS NOT NULL", "ST_GeomFromGeoJSON", "c.pwa_code ="}
+	for _, fragment := range forbidden {
+		if strings.Contains(query, fragment) {
+			t.Fatalf("did not expect query to contain %q, query was %s", fragment, query)
+		}
+	}
+	if !strings.Contains(query, "WHERE TRUE") {
+		t.Fatalf("expected base WHERE TRUE, query was %s", query)
+	}
+}
+
+func TestCustomersAllQueryDmaIDsAddAnyFilterAndNotNullFilter(t *testing.T) {
+	query, args := customersAllQuery(1, model.CustomersAllFilter{PwaCode: "5531011", DmaIDs: []int{1, 2, 10}})
+	if !strings.Contains(query, "AND b.dma_id = ANY($1::int[])") {
+		t.Fatalf("expected dma_id ANY filter inside LATERAL join, query was %s", query)
+	}
+	if !strings.Contains(query, "d.dma_id IS NOT NULL") {
+		t.Fatalf("expected d.dma_id IS NOT NULL filter when dma_id given without polygon, query was %s", query)
+	}
+	if len(args) != 2 {
+		t.Fatalf("expected 2 bound args (dma ids, pwa_code), got %d: %v", len(args), args)
+	}
+	ids, ok := args[0].([]int32)
+	if !ok || len(ids) != 3 {
+		t.Fatalf("expected first arg to be []int32 of length 3, got %#v", args[0])
+	}
+}
+
+func TestCustomersAllQueryPolygonOmitsNotNullFilterEvenWithDmaIDs(t *testing.T) {
+	query, args := customersAllQuery(1, model.CustomersAllFilter{
+		DmaIDs:         []int{1, 2},
+		PolygonGeoJSON: `{"type":"Polygon","coordinates":[]}`,
+	})
+	if strings.Contains(query, "d.dma_id IS NOT NULL") {
+		t.Fatalf("did not expect d.dma_id IS NOT NULL when a polygon is present, query was %s", query)
+	}
+	if !strings.Contains(query, "ST_GeomFromGeoJSON") || !strings.Contains(query, "ST_Intersects(ST_SetSRID(ST_GeomFromGeoJSON") {
+		t.Fatalf("expected polygon clause, query was %s", query)
+	}
+	if !strings.Contains(query, "AND b.dma_id = ANY($1::int[])") {
+		t.Fatalf("expected dma_id to still restrict the reported DMA, query was %s", query)
+	}
+	if len(args) != 2 {
+		t.Fatalf("expected 2 bound args (dma ids, polygon), got %d: %v", len(args), args)
+	}
+}
+
+func TestCustomersAllQueryUsetypesUseTextArrayFilter(t *testing.T) {
+	query, args := customersAllQuery(1, model.CustomersAllFilter{Usetypes: []string{"22", "35"}})
+	if !strings.Contains(query, "c.usetype = ANY($1::text[])") {
+		t.Fatalf("expected usetype ANY filter, query was %s", query)
+	}
+	if len(args) != 1 {
+		t.Fatalf("expected 1 bound arg, got %d: %v", len(args), args)
+	}
+	values, ok := args[0].([]string)
+	if !ok || len(values) != 2 {
+		t.Fatalf("expected first arg to be []string of length 2, got %#v", args[0])
+	}
+}
+
+func TestCustomersAllQueryArgOrderMatchesPlaceholders(t *testing.T) {
+	query, args := customersAllQuery(1, model.CustomersAllFilter{
+		PwaCode:  "5531011",
+		DmaIDs:   []int{1},
+		Usetypes: []string{"22"},
+	})
+	if len(args) != 3 {
+		t.Fatalf("expected 3 bound args (dma ids, pwa_code, usetype), got %d: %v", len(args), args)
+	}
+	if !strings.Contains(query, "ANY($1::int[])") {
+		t.Fatalf("expected dma_id bound to $1, query was %s", query)
+	}
+	if !strings.Contains(query, "c.pwa_code = $2") {
+		t.Fatalf("expected pwa_code bound to $2, query was %s", query)
+	}
+	if !strings.Contains(query, "c.usetype = ANY($3::text[])") {
+		t.Fatalf("expected usetype bound to $3, query was %s", query)
 	}
 }

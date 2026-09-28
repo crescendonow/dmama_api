@@ -9,16 +9,29 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
+// usageRecorder is the subset of *repository.UsageRecorder that UsageLogger needs; declaring it
+// as an interface (rather than depending on the concrete type) lets tests use a fake recorder.
+type usageRecorder interface {
+	Record(repository.UsageRecord)
+}
+
 // UsageLogger records each request's response size, duration, and timestamps to auth_logs.dmama_use.
 // Register on the authenticated /api group (after APIKeyAuth) so health checks and rejected (401)
 // requests are excluded. Recording is async and never blocks or fails the request.
-func UsageLogger(rec *repository.UsageRecorder) fiber.Handler {
+func UsageLogger(rec usageRecorder) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
 		err := c.Next()
 		end := time.Now()
 
-		sizeBytes := int64(len(c.Response().Body()))
+		// Streamed responses (SetBodyStreamWriter, e.g. /api/dma/customers-all) are written
+		// directly to the socket after this middleware returns; c.Response().Body() would drain
+		// that stream into memory first (multi-GB for the largest requests) just to measure it.
+		// Size is recorded as 0 for those instead of buffering the whole response.
+		var sizeBytes int64
+		if !c.Response().IsBodyStream() {
+			sizeBytes = int64(len(c.Response().Body()))
+		}
 		value, unit := repository.HumanizeBytes(sizeBytes)
 
 		rec.Record(repository.UsageRecord{

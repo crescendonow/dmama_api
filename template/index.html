@@ -24,7 +24,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./static/css/docs.css?v=20260410">
+  <link rel="stylesheet" href="./static/css/docs.css?v=20260928">
+  <link rel="icon" type="image/svg+xml" href="./static/logo/pwa_logo2015.svg">
 </head>
 <body class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-200">
 
@@ -36,7 +37,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <div class="flex items-center gap-2">
-          <svg class="w-7 h-7 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          <img src="./static/logo/pwa_logo2015.svg" alt="PWA" class="w-7 h-7">
           <h1 class="text-lg font-bold text-white">DMAMA API</h1>
           <span class="hidden sm:inline-flex text-xs bg-sky-500/30 text-sky-200 px-2 py-0.5 rounded-full font-medium">v2026.04</span>
         </div>
@@ -133,6 +134,9 @@
           </a>
           <a href="#ep-dma-customers" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ผู้ใช้น้ำใน DMA
+          </a>
+          <a href="#ep-dma-customers-all" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
+            <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ผู้ใช้น้ำทั้งหมด (stream)
           </a>
           <a href="#ep-dma-usage-v2" class="nav-link block pl-9 pr-6 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-sky-400 border-l-2 border-transparent">
             <span class="inline-block w-10 text-center text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded mr-1">GET</span> ปริมาณการใช้น้ำ-v2
@@ -408,6 +412,48 @@ res = requests.get(
               <li>Spatial tools: <code class="text-xs">asset/nearest</code>, <code class="text-xs">asset/in-area</code></li>
             </ul>
           </div>
+        </div>
+
+        <!-- Interactive playground -- customers-all only (see note/22_plan_for_customers_endpoint.md).
+             The API key lives only in the ca-api-key input's in-memory value: it is never written to
+             the URL, query params, or localStorage, and is lost on refresh. -->
+        <div class="mt-8 bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-1">ทดลองเรียก /api/dma/customers-all</h3>
+          <p class="text-sm text-amber-700 dark:text-amber-300 mb-4">API key อยู่ในหน่วยความจำของหน้านี้เท่านั้น ไม่ถูกบันทึกใน URL, query string หรือ <code class="text-xs">localStorage</code> และจะหายไปเมื่อรีเฟรชหน้า</p>
+          <form id="customers-all-form" class="space-y-3">
+            <label class="block text-sm text-slate-700 dark:text-slate-200">API key
+              <input id="ca-api-key" type="password" autocomplete="off" required
+                class="mt-1 w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-800 dark:text-slate-100">
+            </label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <label class="block text-sm text-slate-700 dark:text-slate-200">Region
+                <input id="ca-region" inputmode="numeric" placeholder="1"
+                  class="mt-1 w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-800 dark:text-slate-100">
+              </label>
+              <label class="block text-sm text-slate-700 dark:text-slate-200">PWA code
+                <input id="ca-pwa-code" placeholder="5531011"
+                  class="mt-1 w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-800 dark:text-slate-100">
+              </label>
+              <label class="block text-sm text-slate-700 dark:text-slate-200">dma_id
+                <input id="ca-dma-id" placeholder="1,2,10"
+                  class="mt-1 w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-800 dark:text-slate-100">
+              </label>
+              <label class="block text-sm text-slate-700 dark:text-slate-200">usetype
+                <input id="ca-usetype" placeholder="22,35"
+                  class="mt-1 w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-800 dark:text-slate-100">
+              </label>
+            </div>
+            <label class="block text-sm text-slate-700 dark:text-slate-200">my_polygon (GeoJSON; ใส่แล้วจะยิงเป็น POST, เว้นว่างไว้จะยิงเป็น GET)
+              <textarea id="ca-polygon" rows="3" placeholder='{"type":"Polygon","coordinates":[[[101.68,13.98],[101.70,13.98],[101.70,14.00],[101.68,14.00],[101.68,13.98]]]}'
+                class="mt-1 w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-mono text-slate-800 dark:text-slate-100"></textarea>
+            </label>
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="submit" class="px-4 py-1.5 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">ส่งคำขอ (พรีวิว ~200 KB)</button>
+              <button type="button" id="ca-download" class="px-4 py-1.5 text-sm font-semibold text-primary-700 dark:text-sky-400 border border-primary-300 dark:border-sky-700 rounded-lg hover:bg-primary-50 dark:hover:bg-slate-700 transition-colors">Download full result</button>
+              <span id="ca-status" role="status" aria-live="polite" class="text-sm text-slate-500 dark:text-slate-400"></span>
+            </div>
+          </form>
+          <pre class="mt-3 p-4 text-xs bg-slate-900 text-slate-100 rounded-lg overflow-x-auto max-h-96 overflow-y-auto"><code id="ca-output">ผลลัพธ์ (พรีวิว) จะแสดงที่นี่</code></pre>
         </div>
       </section>
 
@@ -890,6 +936,126 @@ res = requests.get(
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">missing parameter</td><td class="px-4 py-2"><code class="text-xs">pwa_code and dma_id are required</code></td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">invalid/unknown pwa_code prefix</td><td class="px-4 py-2"><code class="text-xs">unknown pwa_code prefix: xxxx</code></td></tr>
             <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">500</td><td class="px-4 py-2">database/server error</td><td class="px-4 py-2">รายละเอียด error จาก server</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- EP: DMA Customers All (streamed) -->
+      <section id="ep-dma-customers-all" class="endpoint-section mb-12">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">GET</span>
+          <span class="px-3 py-1 text-xs font-bold font-mono rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">POST</span>
+          <code class="text-lg font-mono font-semibold text-slate-800 dark:text-slate-100">/api/dma/customers-all</code>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300 mb-4">
+          ดึงผู้ใช้น้ำทุกรายที่ตรงกับตัวกรอง โดย <strong>stream</strong> ผลลัพธ์เป็น JSON ทีละแถว (ไม่ใช่สร้างทั้งก้อนในหน่วยความจำ) เพราะไม่ใส่ parameter เลยจะได้ข้อมูล <strong>5,000,000+ แถว</strong> จากทุกเขต
+          ผู้ใช้น้ำที่อยู่นอกทุก DMA จะยังถูกส่งกลับมาด้วย โดย <code class="text-xs">dma_id</code>/<code class="text-xs">dma_name</code> เป็น <code class="text-xs">null</code> (LEFT JOIN) และถ้าผู้ใช้น้ำอยู่ในหลาย DMA ที่ทับซ้อนกัน จะได้ <strong>1 แถวต่อผู้ใช้น้ำ</strong> โดยเลือก DMA ที่มี <code class="text-xs">dma_id</code> น้อยที่สุด
+        </p>
+        <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
+          ลำดับพารามิเตอร์แบบยืดหยุ่น: ไม่ใส่ <code class="text-xs">region</code> ก็ได้ (จะ resolve จาก <code class="text-xs">pwa_code</code>) ถ้าใส่ทั้งคู่ต้องตรงกัน; <code class="text-xs">dma_id</code> ต้องมี <code class="text-xs">pwa_code</code> เสมอ; <code class="text-xs">my_polygon</code> ใช้ร่วมกับระดับใดก็ได้ ถ้าใส่ทั้ง <code class="text-xs">dma_id</code> และ <code class="text-xs">my_polygon</code> จะได้เฉพาะผู้ใช้น้ำ<strong>ในรูป polygon</strong> เท่านั้น — <code class="text-xs">dma_id</code> มีผลแค่จำกัดว่าจะรายงาน DMA ไหนใน <code class="text-xs">dma_id</code>/<code class="text-xs">dma_name</code> (ผู้ใช้น้ำในรูปแต่นอก DMA ที่เลือกจะได้ <code class="text-xs">null</code>)
+        </div>
+
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">GET — Query Parameters</h4>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Name</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">Rule</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">1..10; resolve จาก <code class="text-xs">pwa_code</code> ถ้าไม่ส่งมา</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional*</span></td><td class="px-4 py-2">*บังคับเมื่อส่ง <code class="text-xs">dma_id</code>; ต้องอยู่ใน <code class="text-xs">region</code> ถ้าใส่ทั้งคู่</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">dma_id</td><td class="px-4 py-2">comma-separated ints</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">เช่น <code class="text-xs">1,2,10,14,20</code> ค่าซ้ำถูกตัดออก</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">usetype</td><td class="px-4 py-2">comma-separated</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">แต่ละค่าเป็นตัวเลขล้วน เช่น <code class="text-xs">22,35</code> (ไม่ใส่ = ไม่กรอง)</td></tr>
+          </tbody>
+        </table>
+
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">ตัวอย่าง (1.1 – 1.5 ตาม requirement)</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-2">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>1.1 ไม่ใส่ parameter — ทุกเขต (5,000,000+ แถว)</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>curl -N -H <span class="text-emerald-400">"X-API-Key: YOUR_KEY"</span> <span class="text-sky-400">"http://localhost:5013/api/dma/customers-all"</span></code></pre>
+        </div>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-2">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>1.2 region เดียว</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>curl -N -H <span class="text-emerald-400">"X-API-Key: YOUR_KEY"</span> <span class="text-sky-400">"http://localhost:5013/api/dma/customers-all?region=1"</span></code></pre>
+        </div>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-2">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>1.3 region + pwa_code (สาขา)</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>curl -N -H <span class="text-emerald-400">"X-API-Key: YOUR_KEY"</span> <span class="text-sky-400">"http://localhost:5013/api/dma/customers-all?region=1&amp;pwa_code=5531011"</span></code></pre>
+        </div>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-2">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>1.4 + dma_id หลายค่า</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>curl -N -H <span class="text-emerald-400">"X-API-Key: YOUR_KEY"</span> <span class="text-sky-400">"http://localhost:5013/api/dma/customers-all?region=1&amp;pwa_code=5531011&amp;dma_id=1,2,10,14,20"</span></code></pre>
+        </div>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>1.5 + my_polygon (POST)</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>curl -N -H <span class="text-emerald-400">"X-API-Key: YOUR_KEY"</span> -H <span class="text-emerald-400">"Content-Type: application/json"</span> \
+  -X POST <span class="text-sky-400">"http://localhost:5013/api/dma/customers-all"</span> \
+  -d <span class="text-emerald-400">'{"region":1,"pwa_code":"5531011","dma_id":[1,2],"usetype":["22","35"],"my_polygon":{"type":"Polygon","coordinates":[[[101.68,13.98],[101.70,13.98],[101.70,14.00],[101.68,14.00],[101.68,13.98]]]}}'</span></code></pre>
+        </div>
+
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">POST — Request Body</h4>
+        <p class="text-slate-600 dark:text-slate-300 mb-2">ทุกตัวกรองอยู่ใน JSON body เดียวกัน; <code class="text-xs">my_polygon</code> บังคับ ส่วนที่เหลือ optional เหมือน GET</p>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">Field</th><th class="text-left px-4 py-2">Type</th><th class="text-left px-4 py-2">Required</th><th class="text-left px-4 py-2">คำอธิบาย</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">region</td><td class="px-4 py-2">int</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">1..10</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">pwa_code</td><td class="px-4 py-2">string</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional*</span></td><td class="px-4 py-2">*บังคับเมื่อส่ง <code class="text-xs">dma_id</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">dma_id</td><td class="px-4 py-2">int[]</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">เช่น <code class="text-xs">[1, 2]</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono text-xs">usetype</td><td class="px-4 py-2">string[]</td><td class="px-4 py-2"><span class="text-xs text-slate-400">optional</span></td><td class="px-4 py-2">เช่น <code class="text-xs">["22","35"]</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono text-xs">my_polygon</td><td class="px-4 py-2">GeoJSON geometry</td><td class="px-4 py-2"><span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">required</span></td><td class="px-4 py-2"><code class="text-xs">type</code> ต้องเป็น <code class="text-xs">Polygon</code> หรือ <code class="text-xs">MultiPolygon</code>; พิกัด lng/lat, EPSG:4326; ตรวจด้วย <code class="text-xs">ST_IsValid</code> ก่อนเริ่ม stream</td></tr>
+          </tbody>
+        </table>
+
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Response (streamed)</h4>
+        <div class="code-block relative bg-slate-900 rounded-lg overflow-hidden mb-4">
+          <div class="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-400 text-xs"><span>JSON (ตัดบางฟิลด์ lstwtusg)</span><button class="copy-btn hover:text-white transition-colors">Copy</button></div>
+          <pre class="p-4 text-sm text-slate-100 overflow-x-auto"><code>{
+  <span class="text-sky-400">"success"</span>: <span class="text-amber-300">true</span>,
+  <span class="text-sky-400">"year_month"</span>: <span class="text-emerald-400">"256909"</span>,
+  <span class="text-sky-400">"data"</span>: [
+    {
+      <span class="text-sky-400">"dma_id"</span>: <span class="text-emerald-400">"1"</span>,
+      <span class="text-sky-400">"dma_name"</span>: <span class="text-emerald-400">"DMA-001"</span>,
+      <span class="text-sky-400">"pwa_code"</span>: <span class="text-emerald-400">"5531011"</span>,
+      <span class="text-sky-400">"is_customer"</span>: <span class="text-emerald-400">"true"</span>,
+      <span class="text-sky-400">"custstat"</span>: <span class="text-emerald-400">"1"</span>,
+      <span class="text-sky-400">"meterstat"</span>: <span class="text-emerald-400">"1"</span>,
+      <span class="text-sky-400">"usetype"</span>: <span class="text-emerald-400">"22"</span>,
+      <span class="text-sky-400">"custname"</span>: <span class="text-emerald-400">"Customer Name"</span>,
+      <span class="text-sky-400">"latitude"</span>: <span class="text-amber-300">13.9849</span>,
+      <span class="text-sky-400">"longitude"</span>: <span class="text-amber-300">101.6893</span>,
+      <span class="text-sky-400">"custaddr"</span>: <span class="text-emerald-400">"Customer address"</span>,
+      <span class="text-sky-400">"custcode"</span>: <span class="text-emerald-400">"5531011000001"</span>,
+      <span class="text-sky-400">"meterno"</span>: <span class="text-emerald-400">"12345678"</span>,
+      <span class="text-sky-400">"mtrrdroute"</span>: <span class="text-emerald-400">"01"</span>,
+      <span class="text-sky-400">"mtrseq"</span>: <span class="text-emerald-400">"0001"</span>,
+      <span class="text-sky-400">"metermake"</span>: <span class="text-emerald-400">"ABC"</span>,
+      <span class="text-sky-400">"metersize"</span>: <span class="text-emerald-400">"15"</span>,
+      <span class="text-sky-400">"prswtusg"</span>: <span class="text-amber-300">123.45</span>,
+      <span class="text-sky-400">"lstwtusg1"</span>: <span class="text-amber-300">120.27</span>,
+      <span class="text-sky-400">"..."</span>: <span class="text-emerald-400">"..."</span>,
+      <span class="text-sky-400">"lstwtusg12"</span>: <span class="text-amber-300">110.18</span>
+    }
+  ],
+  <span class="text-sky-400">"count"</span>: <span class="text-amber-300">1</span>
+}</code></pre>
+        </div>
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg p-4 mb-4 space-y-2">
+          <p class="text-sm text-amber-800 dark:text-amber-200"><strong>Streaming:</strong> response ถูกเขียนออกทีละแถวจริง (ไม่ได้ query ทั้งหมดเข้า memory ก่อน) เพราะฉะนั้น <code class="text-xs">count</code> จึงอยู่ <strong>ท้ายสุด</strong> (หลัง <code class="text-xs">data</code>) เนื่องจากไม่รู้จำนวนแถวจนกว่า stream จะจบ Header ที่ส่งกลับ: <code class="text-xs">Content-Type: application/json; charset=utf-8</code>, <code class="text-xs">Cache-Control: no-store</code>, <code class="text-xs">X-Accel-Buffering: no</code> (กัน nginx buffer)</p>
+          <p class="text-sm text-amber-800 dark:text-amber-200"><strong>year_month</strong> คือรอบบิลของ <code class="text-xs">prswtusg</code> (คำนวณแบบเดียวกับ <code class="text-xs">/api/dma/stats</code>: cutoff วันที่ 15, พ.ศ., เดือน 2 หลัก) ส่วน <code class="text-xs">lstwtusgN</code> คือ <code class="text-xs">year_month</code> ย้อนหลัง N เดือน (คำนวณ ไม่ได้แสดงต่อแถว)</p>
+          <p class="text-sm text-amber-800 dark:text-amber-200"><strong>ไม่รับประกันลำดับแถวและไม่มี pagination</strong> ถ้าเกิด error ระหว่าง stream (database หรือ socket) การเชื่อมต่อจะถูกปิดโดยไม่ปิด JSON ให้ครบ (<code class="text-xs">]}</code> ขาดหาย) ผู้เรียกจะได้ JSON parse ไม่ผ่านและต้อง retry คำขอทั้งหมด — HTTP status เปลี่ยนไม่ได้แล้วเพราะ header ส่งไปก่อนหน้านี้</p>
+        </div>
+
+        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Errors (ก่อนเริ่ม stream — เป็น JSON ปกติ)</h4>
+        <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+          <thead class="bg-slate-50 dark:bg-slate-800"><tr><th class="text-left px-4 py-2">HTTP Status</th><th class="text-left px-4 py-2">Case</th><th class="text-left px-4 py-2">Message</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">region ไม่ใช่ 1-10</td><td class="px-4 py-2"><code class="text-xs">region must be 1-10</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">pwa_code prefix ไม่รู้จัก</td><td class="px-4 py-2"><code class="text-xs">unknown pwa_code prefix: xxxx</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">pwa_code ไม่อยู่ใน region</td><td class="px-4 py-2"><code class="text-xs">pwa_code does not belong to the requested region</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">dma_id ไม่มี pwa_code</td><td class="px-4 py-2"><code class="text-xs">pwa_code is required when dma_id is provided</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">dma_id ไม่ใช่ตัวเลข</td><td class="px-4 py-2"><code class="text-xs">dma_id must be a comma-separated list of integers</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">usetype ผิดรูปแบบ</td><td class="px-4 py-2"><code class="text-xs">usetype must be a comma-separated list of numeric codes</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">POST body ไม่ใช่ JSON / ไม่มี my_polygon / ชนิดผิด</td><td class="px-4 py-2">ข้อความอธิบายตามสาเหตุ</td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50"><td class="px-4 py-2 font-mono">400</td><td class="px-4 py-2">polygon geometry ไม่ valid</td><td class="px-4 py-2"><code class="text-xs">invalid my_polygon: &lt;ST_IsValidReason&gt;</code></td></tr>
+            <tr class="border-t border-slate-200 dark:border-slate-700"><td class="px-4 py-2 font-mono">500</td><td class="px-4 py-2">database error ตอนเปิด query แรก</td><td class="px-4 py-2">รายละเอียด error จาก server</td></tr>
           </tbody>
         </table>
       </section>
@@ -1399,6 +1565,6 @@ res = requests.get(
     </div>
   </main>
 
-  <script src="./static/js/docs.js?v=20260410"></script>
+  <script src="./static/js/docs.js?v=20260928"></script>
 </body>
 </html>

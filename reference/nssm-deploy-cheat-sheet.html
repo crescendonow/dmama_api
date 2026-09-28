@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dmama_api NSSM Cheat Sheet</title><link rel="stylesheet" href="../assets/lesson.css"></head>
+<body><main>
+<h1>dmama_api · NSSM Cheat Sheet</h1>
+<p class="lead">คำสั่งย่อสำหรับ Windows Server 2019 — รัน PowerShell แบบ Administrator และแก้ path/subnet ให้ตรงระบบจริง</p>
+<h2>ค่ามาตรฐาน</h2>
+<pre><code>$Service = 'dmama_api'
+$Root    = 'C:\Services\dmama_api'
+$Nssm    = 'C:\nssm-2.24\nssm-2.24\win64\nssm.exe'
+$Exe     = Join-Path $Root 'dmama_api.exe'
+$Log     = Join-Path $Root 'logs\service.log'</code></pre>
+<h2>ติดตั้ง</h2>
+<pre><code>&amp; $Nssm install $Service $Exe
+&amp; $Nssm set $Service AppDirectory $Root
+&amp; $Nssm set $Service DisplayName 'DMAMA API'
+&amp; $Nssm set $Service Description 'DMAMA Fiber API'
+&amp; $Nssm set $Service Start SERVICE_DELAYED_AUTO_START
+&amp; $Nssm set $Service AppStdout $Log
+&amp; $Nssm set $Service AppStderr $Log
+&amp; $Nssm set $Service AppStdoutCreationDisposition 4
+&amp; $Nssm set $Service AppStderrCreationDisposition 4
+&amp; $Nssm set $Service AppRotateFiles 1
+&amp; $Nssm set $Service AppRotateOnline 0
+&amp; $Nssm set $Service AppRotateBytes 10485760
+&amp; $Nssm set $Service AppRestartDelay 5000
+&amp; $Nssm set $Service ObjectName "NT SERVICE\$Service"
+icacls $Root /grant "NT SERVICE\${Service}:(OI)(CI)RX"
+icacls (Join-Path $Root 'logs') /grant "NT SERVICE\${Service}:(OI)(CI)M"
+&amp; $Nssm start $Service</code></pre>
+<h2>ตรวจสอบ</h2>
+<pre><code>Get-Service $Service
+&amp; $Nssm status $Service
+Invoke-RestMethod 'http://127.0.0.1:5013/api/health'
+Get-Content $Log -Tail 100</code></pre>
+<h2>อัปเดต / rollback</h2>
+<pre><code>&amp; $Nssm stop $Service
+Copy-Item $Exe "$Exe.bak" -Force
+Copy-Item 'C:\Staging\dmama_api.exe' $Exe -Force
+&amp; $Nssm start $Service
+Invoke-RestMethod 'http://127.0.0.1:5013/api/health'
+
+# rollback เมื่อ health check ไม่ผ่าน
+&amp; $Nssm stop $Service
+Copy-Item "$Exe.bak" $Exe -Force
+&amp; $Nssm start $Service</code></pre>
+<p><a href="../lessons/0001-deploy-dmama-api-with-nssm.html">เปิดบทเรียนฉบับเต็ม</a></p>
+</main></body></html>

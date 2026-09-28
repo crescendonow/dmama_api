@@ -318,16 +318,6 @@ func (h *FeatureHandler) Sync(c *fiber.Ctx) error {
 	return c.JSON(model.SuccessResponse(fiber.Map{"synced": n}))
 }
 
-// FeatureUnavailable answers every feature route with a clear 503 when the feature backend is not
-// ready: PostgreSQL 16 / MongoDB unconfigured or unreachable, or the dmama_layer schema/tables not
-// provisioned. Registered in place of the real routes so misconfiguration surfaces as an explicit
-// message instead of Fiber's "Cannot POST" 404 or a per-request 42P01.
-func FeatureUnavailable(c *fiber.Ctx) error {
-	return c.Status(503).JSON(model.ErrorResponse(
-		"feature CRUD unavailable: PostgreSQL 16 (GISDATA_URL) / MongoDB not configured, " +
-			"or dmama_layer schema not ready — run migrations/0001_dmama_layer.sql"))
-}
-
 // dbError maps a known not-found to 404, everything else to 500.
 func (h *FeatureHandler) dbError(c *fiber.Ctx, err error) error {
 	if errors.Is(err, repository.ErrCollectionNotFound) {

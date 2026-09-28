@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bufio"
 	"context"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -366,4 +368,72 @@ func (h *DMAHandler) PipeLengthClipped(c *fiber.Ctx) error {
 		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
 	}
 	return c.JSON(model.SuccessResponse(result))
+}
+
+// GetCustomersAll streams every customer row matched by region/pwa_code/dma_id/usetype filters.
+// With no parameters it streams all ~5M+ rows across every region. See
+// note/22_plan_for_customers_endpoint.md for the full contract.
+// GET /api/dma/customers-all?region=1&pwa_code=5531011&dma_id=1,2,10&usetype=22,35
+func (h *DMAHandler) GetCustomersAll(c *fiber.Ctx) error {
+	filter, err := service.ParseCustomersAllQuery(c.Query("region"), c.Query("pwa_code"), c.Query("dma_id"), c.Query("usetype"))
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+	}
+	return h.streamCustomersAll(c, filter)
+}
+
+// PostCustomersAll streams customer rows inside a user-drawn polygon (GeoJSON Polygon/MultiPolygon
+// in EPSG:4326). All other filters are optional and follow the same rules as the GET form.
+// POST /api/dma/customers-all  { "region":1, "pwa_code":"5531011", "dma_id":[1,2], "usetype":["22","35"], "my_polygon": {...} }
+func (h *DMAHandler) PostCustomersAll(c *fiber.Ctx) error {
+	filter, err := service.ParseCustomersAllBody(c.Body())
+	if err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+	}
+	if err := h.customerRepo.ValidatePolygon(c.Context(), filter.PolygonGeoJSON); err != nil {
+		return c.Status(400).JSON(model.ErrorResponse(err.Error()))
+	}
+	return h.streamCustomersAll(c, filter)
+}
+
+// streamCustomersAll opens the first region's rows before touching the response so a DB error
+// there becomes a normal 500 JSON response instead of a broken stream, then hands the rest of the
+// work to writeCustomersAllStream via SetBodyStreamWriter. Fiber recycles c once this function
+// returns and runs the stream writer closure afterwards, so the closure captures everything it
+// needs (yearMonth, open, regions, firstRows) up front and never touches c.
+func (h *DMAHandler) streamCustomersAll(c *fiber.Ctx, filter model.CustomersAllFilter) error {
+	yearMonth, err := service.ResolveStatsYearMonth("prswtusg", time.Now())
+	if err != nil {
+		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+
+	regions := filter.Regions
+	if len(regions) == 0 {
+		return c.Status(400).JSON(model.ErrorResponse("region or pwa_code could not be resolved"))
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	firstRows, err := h.customerRepo.OpenCustomersAll(ctx, regions[0], filter)
+	if err != nil {
+		cancel()
+		return c.Status(500).JSON(model.ErrorResponse(err.Error()))
+	}
+
+	customerRepo := h.customerRepo
+	open := func(region int) (customerAllSource, error) {
+		return customerRepo.OpenCustomersAll(ctx, region, filter)
+	}
+
+	c.Set("Content-Type", "application/json; charset=utf-8")
+	c.Set("Cache-Control", "no-store")
+	c.Set("X-Accel-Buffering", "no")
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		defer cancel()
+		rows, streamErr := writeCustomersAllStream(w, yearMonth, open, regions, firstRows)
+		if streamErr != nil {
+			log.Printf("customers-all stream failed after %d rows: %v", rows, streamErr)
+		}
+	})
+	return nil
 }

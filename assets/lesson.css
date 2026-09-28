@@ -1,0 +1,17 @@
+:root { color-scheme: light dark; font-family: "Segoe UI", system-ui, sans-serif; line-height: 1.55; }
+body { margin: 0; background: #0b1220; color: #dbeafe; }
+main { max-width: 960px; margin: 0 auto; padding: 48px 28px 80px; }
+h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.05; color: #f8fafc; }
+h2 { margin-top: 2.2rem; color: #7dd3fc; }
+h3 { color: #bae6fd; }
+p, li { max-width: 78ch; }
+.lead { font-size: 1.2rem; color: #bae6fd; }
+.card { margin: 1rem 0; padding: 1rem 1.2rem; border: 1px solid #334155; border-radius: 12px; background: #111c30; }
+.warn { border-color: #f59e0b; background: #291d0b; }
+.ok { border-color: #22c55e; background: #0d281b; }
+code { color: #fde68a; }
+pre { overflow-x: auto; padding: 1rem; border-radius: 10px; background: #020617; border: 1px solid #1e293b; }
+a { color: #7dd3fc; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .65rem; border-bottom: 1px solid #334155; text-align: left; vertical-align: top; }
+@media print { body { background: white; color: #111827; } main { padding: 0; } .card, pre { background: #f8fafc; color: #111827; } }

@@ -55,6 +55,18 @@ type ValidationResult struct {
 	Warnings   []string `json:"warnings,omitempty"`
 }
 
+// FeatureStatus reports feature-CRUD readiness broken down per backend leg, so a 503 can name the
+// one that's actually down instead of listing all three possible causes in one sentence. Returned
+// by GET /api/monitor/readiness and as the Data of a gated 503.
+type FeatureStatus struct {
+	Ready     bool   `json:"ready"`
+	Postgres  bool   `json:"postgres"`
+	Mongo     bool   `json:"mongo"`
+	Schema    bool   `json:"dmama_layer"`
+	Reason    string `json:"reason,omitempty"`
+	CheckedAt string `json:"checked_at,omitempty"`
+}
+
 // AsInt coerces a BSON/JSON numeric value (int32/int64/float64/…) to int, returning 0 for
 // nil or non-numeric input. Used to read properties.dmaId regardless of how it was stored.
 func AsInt(v interface{}) int {

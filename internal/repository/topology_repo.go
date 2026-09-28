@@ -5,23 +5,80 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"dmama_api/internal/model"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+const topologySchemaMigrationHint = "run migrations/0001_dmama_layer.sql on the database configured by GISDATA_URL"
+
+const topologySchemaExistsSQL = `SELECT to_regnamespace($1::text) IS NOT NULL`
+
+// topologyTableStatusSQL checks one dmama_layer mirror table against its expected shape. The
+// predicate is LIKE, not =, because format_type schema-qualifies the PostGIS type (e.g.
+// public.geometry(...)) whenever postgis is off the connection's search_path -- an exact match
+// would report a correctly-provisioned table as broken.
+const topologyTableStatusSQL = `
+WITH target AS (
+	SELECT to_regclass($1::text) AS oid
+),
+expected(column_name, expected_type, expected_not_null) AS (
+	VALUES
+		('mongo_id', 'text', true),
+		('pwa_code', 'text', true),
+		('dma_id', 'integer', false),
+		('properties', 'jsonb', false),
+		('geom', '%geometry(Geometry,4326)', false),
+		('created_at', 'timestamp with time zone', true),
+		('updated_at', 'timestamp with time zone', true)
+)
+SELECT
+	target.oid IS NOT NULL AS table_exists,
+	target.oid IS NOT NULL
+		AND bool_and(
+			a.attname IS NOT NULL
+			AND format_type(a.atttypid, a.atttypmod) LIKE expected.expected_type
+			AND a.attnotnull = expected.expected_not_null
+		) AS schema_ready
+FROM target
+CROSS JOIN expected
+LEFT JOIN pg_attribute a
+	ON a.attrelid = target.oid
+	AND a.attname = expected.column_name
+	AND a.attnum > 0
+	AND NOT a.attisdropped
+GROUP BY target.oid`
+
+type topoDB interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
 
 // TopologyRepo runs PostGIS-16 topology validation and maintains the dmama_layer mirror.
 // Geometries are passed in as GeoJSON strings in EPSG:4326 (the CRS used by the frontend).
 // The mirror tables double as the GiST-indexed neighbour source for set-based topology checks;
 // MongoDB remains the source of truth, the mirror is rebuildable via SyncFromMongo.
 type TopologyRepo struct {
-	pool *pgxpool.Pool
+	db topoDB
 }
 
+// NewTopologyRepo wraps a PostgreSQL 16 pool. A nil pool yields a repo with no db handle rather
+// than a non-nil *TopologyRepo whose interior interface secretly holds a nil pointer -- callers
+// (e.g. the feature readiness gate) rely on being able to tell "not configured" apart from
+// "configured but broken".
 func NewTopologyRepo(pool *pgxpool.Pool) *TopologyRepo {
-	return &TopologyRepo{pool: pool}
+	if pool == nil {
+		return &TopologyRepo{}
+	}
+	return newTopologyRepo(pool)
+}
+
+func newTopologyRepo(db topoDB) *TopologyRepo {
+	return &TopologyRepo{db: db}
 }
 
 const schemaName = "dmama_layer"
@@ -42,13 +99,71 @@ func tableFor(shape string) (string, error) {
 	return tbl, nil
 }
 
-// EnsureSchema creates the dmama_layer schema, the per-shape mirror tables, and their indexes.
-// It is idempotent. PostGIS is assumed to be installed in the target database.
-func (r *TopologyRepo) EnsureSchema(ctx context.Context) error {
-	if _, err := r.pool.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+schemaName); err != nil {
-		return fmt.Errorf("ensure schema: %w", err)
+// mirrorTableNames is the fixed, ordered list of dmama_layer mirror tables. A slice (not the
+// mirrorTables map) keeps SchemaStatus/EnsureSchema output order stable across runs.
+var mirrorTableNames = []string{"dma_boundary", "flow_meter", "step_test"}
+
+// TopologySchemaStatus is the read-only result of probing dmama_layer against its expected shape.
+// Ready means EnsureSchema needs to issue zero DDL.
+type TopologySchemaStatus struct {
+	SchemaExists  bool
+	MissingTables []string
+	Mismatched    []string
+	Ready         bool
+}
+
+// SchemaStatus probes dmama_layer and its three mirror tables using read-only catalog lookups
+// only (to_regnamespace/to_regclass + pg_attribute) -- it never issues DDL, so it is safe to call
+// on every request (see handler.FeatureGate).
+func (r *TopologyRepo) SchemaStatus(ctx context.Context) (TopologySchemaStatus, error) {
+	var status TopologySchemaStatus
+	if err := r.db.QueryRow(ctx, topologySchemaExistsSQL, schemaName).Scan(&status.SchemaExists); err != nil {
+		return TopologySchemaStatus{}, err
 	}
-	for _, name := range []string{"dma_boundary", "flow_meter", "step_test"} {
+
+	ready := status.SchemaExists
+	for _, name := range mirrorTableNames {
+		var exists, tableReady bool
+		full := schemaName + "." + name
+		if err := r.db.QueryRow(ctx, topologyTableStatusSQL, full).Scan(&exists, &tableReady); err != nil {
+			return TopologySchemaStatus{}, err
+		}
+		switch {
+		case !exists:
+			status.MissingTables = append(status.MissingTables, name)
+			ready = false
+		case !tableReady:
+			status.Mismatched = append(status.Mismatched, name)
+			ready = false
+		}
+	}
+	status.Ready = ready
+	return status, nil
+}
+
+// EnsureSchema verifies dmama_layer, then creates only what's genuinely missing. Production
+// should provision this via migrations/0001_dmama_layer.sql so the app role only needs USAGE +
+// DML; EnsureSchema still self-heals a genuinely missing schema/table (created by dmama, so its
+// own CREATE INDEX later passes the ownership check).
+func (r *TopologyRepo) EnsureSchema(ctx context.Context) error {
+	status, err := r.SchemaStatus(ctx)
+	if err != nil {
+		return topologySchemaError("check dmama_layer schema", err)
+	}
+	if status.Ready {
+		return nil
+	}
+	if len(status.Mismatched) > 0 {
+		return fmt.Errorf("dmama_layer.%s exists but does not match the required schema; %s",
+			strings.Join(status.Mismatched, ", "), topologySchemaMigrationHint)
+	}
+
+	if !status.SchemaExists {
+		if _, err := r.db.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+schemaName); err != nil {
+			return topologySchemaError("create dmama_layer schema", err)
+		}
+	}
+	for _, name := range status.MissingTables {
 		full := schemaName + "." + name
 		stmts := []string{
 			fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
@@ -65,12 +180,24 @@ func (r *TopologyRepo) EnsureSchema(ctx context.Context) error {
 			fmt.Sprintf(`CREATE INDEX IF NOT EXISTS %s_pwa_dma_idx ON %s (pwa_code, dma_id)`, name, full),
 		}
 		for _, s := range stmts {
-			if _, err := r.pool.Exec(ctx, s); err != nil {
-				return fmt.Errorf("ensure table %s: %w", full, err)
+			if _, err := r.db.Exec(ctx, s); err != nil {
+				return topologySchemaError("create table "+full, err)
 			}
 		}
 	}
+
+	status, err = r.SchemaStatus(ctx)
+	if err != nil {
+		return topologySchemaError("validate dmama_layer schema", err)
+	}
+	if !status.Ready {
+		return fmt.Errorf("dmama_layer still does not match the required schema after create; %s", topologySchemaMigrationHint)
+	}
 	return nil
+}
+
+func topologySchemaError(action string, err error) error {
+	return fmt.Errorf("%s: %w; %s", action, err, topologySchemaMigrationHint)
 }
 
 // CheckValidity reports whether a geometry is OGC-valid (covers self-intersection, ring
@@ -79,7 +206,7 @@ func (r *TopologyRepo) CheckValidity(ctx context.Context, geomGeoJSON string) (v
 	const q = `
 		WITH g AS (SELECT ST_SetSRID(ST_GeomFromGeoJSON($1), 4326) AS geom)
 		SELECT ST_IsValid(geom), ST_IsValidReason(geom) FROM g`
-	if err := r.pool.QueryRow(ctx, q, geomGeoJSON).Scan(&valid, &reason); err != nil {
+	if err := r.db.QueryRow(ctx, q, geomGeoJSON).Scan(&valid, &reason); err != nil {
 		return false, "", err
 	}
 	return valid, reason, nil
@@ -104,7 +231,7 @@ func (r *TopologyRepo) OverlapsExisting(ctx context.Context, shape, pwaCode, geo
 		)`, tbl)
 
 	var overlaps bool
-	if err := r.pool.QueryRow(ctx, q, geomGeoJSON, pwaCode, excludeMongoID).Scan(&overlaps); err != nil {
+	if err := r.db.QueryRow(ctx, q, geomGeoJSON, pwaCode, excludeMongoID).Scan(&overlaps); err != nil {
 		return false, err
 	}
 	return overlaps, nil
@@ -141,7 +268,7 @@ func (r *TopologyRepo) CollectionOverlaps(ctx context.Context, geometries []stri
 		) FROM overlap_pairs`
 
 	var raw []byte
-	if err := r.pool.QueryRow(ctx, q, payload).Scan(&raw); err != nil {
+	if err := r.db.QueryRow(ctx, q, payload).Scan(&raw); err != nil {
 		return nil, err
 	}
 	var pairs [][2]int
@@ -164,7 +291,7 @@ func (r *TopologyRepo) WithinDmaCoverage(ctx context.Context, pwaCode, geomGeoJS
 		SELECT (cov.g IS NOT NULL), COALESCE(ST_CoveredBy(input.g, cov.g), false)
 		FROM input, cov`
 
-	err = r.pool.QueryRow(ctx, q, geomGeoJSON, pwaCode).Scan(&hasCoverage, &within)
+	err = r.db.QueryRow(ctx, q, geomGeoJSON, pwaCode).Scan(&hasCoverage, &within)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, false, nil
 	}
@@ -189,7 +316,7 @@ func (r *TopologyRepo) Upsert(ctx context.Context, shape, mongoID, pwaCode strin
 			properties = EXCLUDED.properties,
 			geom       = EXCLUDED.geom,
 			updated_at = now()`, tbl)
-	_, err = r.pool.Exec(ctx, q, mongoID, pwaCode, dmaID, propertiesJSON, geomGeoJSON)
+	_, err = r.db.Exec(ctx, q, mongoID, pwaCode, dmaID, propertiesJSON, geomGeoJSON)
 	return err
 }
 
@@ -199,6 +326,6 @@ func (r *TopologyRepo) Delete(ctx context.Context, shape, mongoID string) error 
 	if err != nil {
 		return err
 	}
-	_, err = r.pool.Exec(ctx, fmt.Sprintf(`DELETE FROM %s WHERE mongo_id = $1`, tbl), mongoID)
+	_, err = r.db.Exec(ctx, fmt.Sprintf(`DELETE FROM %s WHERE mongo_id = $1`, tbl), mongoID)
 	return err
 }
